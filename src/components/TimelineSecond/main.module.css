@@ -1,0 +1,92 @@
+:root {
+    --timeCellWidth: 50px;
+}
+
+.container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.container .dateContainer {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 12px;
+}
+
+.container .dateContainer input {
+    margin: 0;
+}
+
+.container .timeline {
+    width: 100%;
+    height: 100px;
+    background-color: aquamarine;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow: auto;
+    position: relative;
+}
+
+.container .timeline .timeCell {
+    display: grid;
+    grid-template-rows: 30px 1fr;
+    background-color: antiquewhite;
+    border: 2px solid black;
+}
+
+.container .timeline .timeCell:not(:last-child) {
+    border-right: none;
+}
+
+.container .timeline .timeCell .header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-bottom: 2px solid black;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+}
+
+.container .timeline .timeCell .header * {
+    pointer-events: none;
+}
+
+.container .timeline .timeCell .steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.container .timeline .timeCell .steps .step {
+    width: 30px;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    cursor: cell;
+}
+
+.container .timeline .timeCell .steps .step::before {
+    content: "";
+    display: none;
+    width: calc(100% - 6px);
+    height: calc(100% - 6px);
+    background-color: rgba(50, 205, 50, 0.5);
+    border-radius: 4px;
+    position: absolute;
+    top: 50%;
+    left: 3px;
+    transform: translateY(-50%);
+}
+
+.container .timeline .timeCell .steps .step:hover::before {
+    display: block;
+}

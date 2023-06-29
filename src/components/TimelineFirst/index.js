@@ -141,10 +141,8 @@ function TimelineFirst() {
             id="mouse-pos"
         >
             {timeList.map((el, i) => (
-                <div>
-                    <div key={i} style={{ width: 140, height: 30, borderColor: "gray", border: "1px solid gray" }}>
-                        {el}
-                    </div>
+                <div key={i}>
+                    <div style={{ width: 140, height: 30, borderColor: "gray", border: "1px solid gray" }}>{el}</div>
                     {oneHourBlock(i)}
                 </div>
             ))}
@@ -163,6 +161,7 @@ function TimelineFirst() {
                                 position: "absolute",
                                 boxSizing: "border-box",
                             }}
+                            key={item.id}
                         >
                             {item.startTimeIndex !== item.finishTimeIndex ? (
                                 <>
