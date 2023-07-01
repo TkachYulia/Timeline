@@ -1,0 +1,131 @@
+.container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 12px;
+    overflow-x: auto;
+}
+
+$paddingSize: 12px;
+$borderTable: 1px solid #ccc;
+
+$numberOfFrozenCols: 3;
+$frozenContentWidth: 100px;
+$frozenCellOffset: $frozenContentWidth + 2 * $paddingSize;
+
+@mixin table-cell {
+    position: relative;
+    z-index: 1;
+    padding: $paddingSize;
+    text-align: left;
+    border-bottom: $borderTable;
+}
+
+@mixin frozen-cell {
+    position: sticky;
+    z-index: 10;
+    @for $i from 1 through $numberOfFrozenCols {
+        &:nth-child(#{$i}) {
+            left: ($i - 1) * $frozenCellOffset + $i;
+        }
+    }
+    .fixedContent {
+        width: $frozenContentWidth;
+    }
+    &.lastCell {
+        border-right: $borderTable;
+    }
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: Arial, sans-serif;
+
+    .thead {
+        $headingBackground: #f2f2f2;
+        background-color: $headingBackground;
+        font-weight: bold;
+
+        .tr .th {
+            @include table-cell();
+            background-color: $headingBackground;
+            &:not(:last-child) {
+                border-right: $borderTable;
+            }
+            & > .timelineTitle {
+                width: max-content;
+                position: sticky;
+                z-index: 10;
+                left: $numberOfFrozenCols * $frozenCellOffset + $paddingSize + $numberOfFrozenCols;
+            }
+            &.frozen {
+                @include frozen-cell();
+            }
+        }
+    }
+
+    .tbody {
+        .tr {
+            .td {
+                @include table-cell();
+                &.frozen {
+                    @include frozen-cell();
+                }
+                &.timeCell {
+                    position: relative;
+                    cursor: cell;
+                    &:not(:last-child) {
+                        border-right: $borderTable;
+                    }
+                    &:hover {
+                        background-color: #e1f5f5;
+                    }
+                    .createdTime {
+                        $borderRadius: 8px;
+
+                        position: absolute;
+                        top: $paddingSize;
+                        bottom: $paddingSize;
+                        cursor: pointer;
+                        &.empty {
+                            display: none;
+                        }
+                        &.single {
+                            background-color: lightgreen;
+                            left: $paddingSize;
+                            right: $paddingSize;
+                            border-radius: $borderRadius;
+                        }
+                        &.start {
+                            background-color: lightsalmon;
+                            left: $paddingSize;
+                            right: 0;
+                            border-radius: $borderRadius 0 0 $borderRadius;
+                        }
+                        &.finish {
+                            background-color: lightseagreen;
+                            left: 0;
+                            right: $paddingSize;
+                            border-radius: 0 $borderRadius $borderRadius 0;
+                        }
+                        &.between {
+                            background-color: lightsteelblue;
+                            left: 0;
+                            right: 0;
+                            border-radius: 0;
+                        }
+                    }
+                }
+            }
+            &:nth-child(odd) .td {
+                background-color: #ffffff;
+            }
+            &:nth-child(even) .td {
+                background-color: #f9f9f9;
+            }
+        }
+    }
+}
