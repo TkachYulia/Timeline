@@ -14,6 +14,7 @@ $borderTable: 1px solid #ccc;
 $numberOfFrozenCols: 3;
 $frozenContentWidth: 100px;
 $frozenCellOffset: $frozenContentWidth + 2 * $paddingSize;
+$timeCellWidth: 30px + 2 * $paddingSize;
 
 @mixin table-cell {
     position: relative;
@@ -28,7 +29,7 @@ $frozenCellOffset: $frozenContentWidth + 2 * $paddingSize;
     z-index: 10;
     @for $i from 1 through $numberOfFrozenCols {
         &:nth-child(#{$i}) {
-            left: ($i - 1) * $frozenCellOffset + $i;
+            left: ($i - 1) * $frozenCellOffset;
         }
     }
     .fixedContent {
@@ -48,13 +49,12 @@ $frozenCellOffset: $frozenContentWidth + 2 * $paddingSize;
         $headingBackground: #f2f2f2;
         background-color: $headingBackground;
         font-weight: bold;
+        position: relative;
+        z-index: 10;
 
         .tr .th {
             @include table-cell();
             background-color: $headingBackground;
-            &:not(:last-child) {
-                border-right: $borderTable;
-            }
             & > .timelineTitle {
                 width: max-content;
                 position: sticky;
@@ -63,6 +63,32 @@ $frozenCellOffset: $frozenContentWidth + 2 * $paddingSize;
             }
             &.frozen {
                 @include frozen-cell();
+            }
+            &.time {
+                position: relative;
+                &::before {
+                    content: "";
+                    position: absolute;
+                    bottom: 0;
+                    left: 50%;
+                    width: 0px;
+                    height: 8px;
+                    transform: translateX(-50%);
+                    border-left: $borderTable;
+                }
+                & > div {
+                    width: 30px;
+                }
+                & .vertLine {
+                    position: absolute;
+                    z-index: 10;
+                    top: 100%;
+                    left: 50%;
+                    width: 0px;
+                    transform: translateX(-50%);
+                    border-left: $borderTable;
+                    pointer-events: none;
+                }
             }
         }
     }
@@ -77,46 +103,40 @@ $frozenCellOffset: $frozenContentWidth + 2 * $paddingSize;
                 &.timeCell {
                     position: relative;
                     cursor: cell;
-                    &:not(:last-child) {
-                        border-right: $borderTable;
-                    }
                     &:hover {
                         background-color: #e1f5f5;
                     }
+                    &.currentTime {
+                        background-color: lightgreen;
+                        &:hover {
+                            background-color: rgb(151, 226, 151);
+                        }
+                    }
+                    &.creating {
+                        background-color: lightsalmon;
+                        &.overlapping {
+                            background-color: orangered;
+                        }
+                    }
                     .createdTime {
                         $borderRadius: 8px;
+                        $vPadding: 6px;
+                        $hPadding: $timeCellWidth / 2;
 
                         position: absolute;
-                        top: $paddingSize;
-                        bottom: $paddingSize;
+                        top: $vPadding;
+                        bottom: $vPadding;
+                        left: $hPadding;
+                        right: $hPadding;
+                        border-radius: $borderRadius;
                         cursor: pointer;
-                        &.empty {
-                            display: none;
-                        }
-                        &.single {
-                            background-color: lightgreen;
-                            left: $paddingSize;
-                            right: $paddingSize;
-                            border-radius: $borderRadius;
-                        }
-                        &.start {
-                            background-color: lightsalmon;
-                            left: $paddingSize;
-                            right: 0;
-                            border-radius: $borderRadius 0 0 $borderRadius;
-                        }
-                        &.finish {
-                            background-color: lightseagreen;
-                            left: 0;
-                            right: $paddingSize;
-                            border-radius: 0 $borderRadius $borderRadius 0;
-                        }
-                        &.between {
-                            background-color: lightsteelblue;
-                            left: 0;
-                            right: 0;
-                            border-radius: 0;
-                        }
+
+                        display: flex;
+                        justify-content: flex-start;
+                        align-items: center;
+                        padding: 8px;
+                        overflow: hidden;
+                        background-color: lightblue;
                     }
                 }
             }

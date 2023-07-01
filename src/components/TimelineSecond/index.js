@@ -1,35 +1,18 @@
-import { useState } from "react";
 import Tippy, { useSingleton } from "@tippyjs/react";
-import styles from "./main.module.scss";
-import { convertDatetimeToNumericMs, createTimelineTimes, getDateTime, getTimeFormat } from "../../exports/functions";
+import { useEffect, useState } from "react";
 import { message } from "antd";
-import { useEffect } from "react";
-
-const STEP_MINUTES = 15;
-const _SHIFTED_TIME_ = new Date();
-_SHIFTED_TIME_.setMinutes(new Date().getMinutes() + STEP_MINUTES);
-const TIME_STEP = _SHIFTED_TIME_.getTime() - new Date().getTime();
-
-console.log(TIME_STEP);
-
-function createWork(workName, startTimeShift, finishTimeShift) {
-    const currentTime = new Date();
-    const editedTime = new Date(currentTime);
-
-    editedTime.setHours(9);
-    editedTime.setSeconds(0);
-    editedTime.setMilliseconds(0);
-    editedTime.setMinutes(Math.floor(currentTime.getMinutes() / STEP_MINUTES) * STEP_MINUTES);
-
-    const startTime = new Date(editedTime.getTime() + startTimeShift * 60 * 1000);
-    const finishTime = new Date(editedTime.getTime() + finishTimeShift * 60 * 1000);
-
-    return {
-        workName,
-        startTime,
-        finishTime,
-    };
-}
+import {
+    GET_TIME,
+    computeAllWorkSize,
+    createTimelineTimes,
+    createWork,
+    getDateTime,
+    getTimeFormat,
+} from "../../exports/functions";
+import styles from "./main.module.scss";
+import FrozenCell from "./FrozenCell";
+import TimelineCell from "./TimelineCell";
+import WorkCreateContext from "../../context/WorkCreateContext";
 
 const exampleDate = [
     {
@@ -37,18 +20,16 @@ const exampleDate = [
         transport: "КАМАЗ 53215 № 2215",
         inventaryNumber: "7036320",
         transportCode: "100500",
-        timeline: [createWork("work1", 0, 15), createWork("work2", 60, 120)],
+        timeline: [createWork("Some easy work", 0, 30), createWork("Other harder work", 90, 180)],
     },
     {
         id: 2,
         transport: "КАМАЗ 53215 № 4487",
         inventaryNumber: "6854998",
         transportCode: "155044",
-        timeline: [createWork("work3", 45, 75), createWork("work4", -60, -60)],
+        timeline: [createWork("Something little", -60, -60), createWork("Repair works", 30, 75), createWork("Repair works", 75, 105)],
     },
 ];
-
-console.log(exampleDate);
 
 const cellDeployer = [
     {
@@ -65,140 +46,149 @@ const cellDeployer = [
     },
 ];
 
-const FrozenCell = ({ isLastCell, isHeading = false, children }) => {
-    const computedClassNames = [
-        styles[isHeading ? "th" : "td"],
-        styles.frozen,
-        ...(isLastCell ? [styles.lastCell] : []),
-    ].join(" ");
-    const fixedContent = <div className={styles.fixedContent}>{children}</div>;
-    if (isHeading)
-        return (
-            <th rowSpan={2} className={computedClassNames}>
-                {fixedContent}
-            </th>
-        );
-    return <td className={computedClassNames}>{fixedContent}</td>;
-};
-
-const CreatedTime = ({ time, dataItem }) => {
-    let cellState = "empty";
-    let content = "";
-
-    const dataTimeline = dataItem.timeline;
-
-    if (Array.isArray(dataTimeline)) {
-        if (
-            dataTimeline.some(
-                (timelineItem) => timelineItem.startTime.getTime() === time && timelineItem.finishTime.getTime() === time
-            )
-        ) {
-            cellState = "single";
-            content = dataTimeline.find(
-                (timelineItem) => timelineItem.startTime.getTime() === time && timelineItem.finishTime.getTime() === time
-            ).workName;
-        } else if (dataTimeline.some((timelineItem) => timelineItem.startTime.getTime() === time)) {
-            cellState = "start";
-            content = dataTimeline.find((timelineItem) => timelineItem.startTime.getTime() === time).workName;
-        } else if (dataTimeline.some((timelineItem) => timelineItem.finishTime.getTime() === time)) {
-            cellState = "finish";
-            content = dataTimeline.find((timelineItem) => timelineItem.finishTime.getTime() === time).workName;
-        } else if (
-            dataTimeline.some(
-                (timelineItem) => timelineItem.startTime.getTime() <= time && time <= timelineItem.finishTime.getTime()
-            )
-        ) {
-            cellState = "between";
-            content = dataTimeline.find(
-                (timelineItem) => timelineItem.startTime.getTime() <= time && time <= timelineItem.finishTime.getTime()
-            ).workName;
-        }
-    }
-
-    return <div className={`${styles.createdTime} ${styles[cellState]}`}>{content}</div>;
-};
-
-const NewTime = () => {
-    return <div className={styles.newTime}></div>;
-};
-
-const TimelineCell = ({ time, dataItem }) => {
-    time = new Date(time).getTime();
-
-    return (
-        <td className={`${styles.td} ${styles.timeCell}`}>
-            <CreatedTime time={time} dataItem={dataItem} />
-        </td>
-    );
-};
-
 const TimelineSecond = ({ startTime: timelineStartTime, finishTime: timelineFinishTime }) => {
-    const [createStartTime, setCreateStartTime] = useState(null);
-    const [createFinishTime, setCreateFinishTime] = useState(null);
-
     const [timelineTimes, setTimelineTimes] = useState(createTimelineTimes(timelineStartTime, timelineFinishTime));
+    const [data, setData] = useState(computeAllWorkSize(exampleDate, timelineTimes));
+
+    console.log(data);
+
+    const [isCreating, setCreating] = useState(false);
+    const [creatingDataId, setCreatingDataId] = useState(null);
+    const [creatingStartTime, setCreatingStartTime] = useState(null);
+    const [creatingHoverTime, setCreatingHoverTime] = useState(null);
+    const [isOverlapping, setOverlapping] = useState(false);
 
     useEffect(() => {
         setTimelineTimes(createTimelineTimes(timelineStartTime, timelineFinishTime));
     }, [timelineStartTime, timelineFinishTime]);
-
-    // message.error("Невозможно создать действие: пересечение временных интервалов");
 
     // Tooltip
     const [source, target] = useSingleton({
         overrides: ["delay", "arrow"],
     });
 
+    const handleClickTimeCell = (id, time) => {
+        if (isCreating) {
+            const startTime = Math.min(creatingStartTime, time);
+            const finishTime = Math.max(creatingStartTime, time);
+            if (!isOverlapping) {
+                message.success(
+                    <div style={{ width: "150px", textAlign: "left" }}>
+                        <h3>New work created!</h3>
+                        <div
+                            style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                        >
+                            <span>FROM:</span>
+                            <span>{getDateTime(startTime)}</span>
+                        </div>
+                        <div
+                            style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                        >
+                            <span>TILL:</span>
+                            <span>{getDateTime(finishTime)}</span>
+                        </div>
+                    </div>
+                );
+                setData((prevData) =>
+                    computeAllWorkSize(
+                        prevData.map((dataItem) => {
+                            if (dataItem.id === id) {
+                                return {
+                                    ...dataItem,
+                                    timeline: [
+                                        ...dataItem.timeline,
+                                        {
+                                            workName: "Created",
+                                            startTime,
+                                            finishTime,
+                                        },
+                                    ],
+                                };
+                            }
+                            return dataItem;
+                        }),
+                        timelineTimes
+                    )
+                );
+            }
+            setCreating(false);
+            setCreatingDataId(null);
+            setCreatingStartTime(null);
+            setCreatingHoverTime(null);
+            setOverlapping(false);
+        } else {
+            setCreating(true);
+            setCreatingDataId(id);
+            setCreatingStartTime(time);
+            setCreatingHoverTime(null);
+            setOverlapping(false);
+        }
+    };
+
+    const workCreateContext = {
+        handleClickTimeCell,
+        isCreating,
+        creatingDataId,
+        creatingStartTime,
+        creatingHoverTime,
+        setCreatingHoverTime,
+        isOverlapping,
+        setOverlapping,
+    };
+
     return (
-        <div className={styles.container}>
-            <div>
-                {getDateTime(timelineStartTime)} - {getDateTime(timelineFinishTime)}
-            </div>
-            <Tippy singleton={source} delay={500} />
-            <table className={styles.table}>
-                <thead className={styles.thead}>
-                    <tr className={styles.tr}>
-                        {cellDeployer.map((cellItem, cellIndex) => (
-                            <FrozenCell
-                                isHeading
-                                key={`head-${cellItem.param}`}
-                                isLastCell={cellIndex === exampleDate.length}
-                            >
-                                {cellItem.title}
-                            </FrozenCell>
-                        ))}
-                        <th colSpan={timelineTimes.length || 1} className={styles.th}>
-                            <div className={styles.timelineTitle}>Шкала работ смены</div>
-                        </th>
-                    </tr>
-                    <tr className={styles.tr}>
-                        {timelineTimes.map((timelineTime) => (
-                            <th key={timelineTime.getTime()} className={styles.th}>
-                                {getTimeFormat(timelineTime)}
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody className={styles.tbody}>
-                    {exampleDate.map((dataItem) => (
-                        <tr key={dataItem.id} className={styles.tr}>
+        <WorkCreateContext.Provider value={workCreateContext}>
+            <div className={styles.container}>
+                <div style={{ position: "sticky", left: 0 }}>
+                    {getDateTime(timelineStartTime)} - {getDateTime(timelineFinishTime)}
+                </div>
+                <Tippy singleton={source} delay={500} />
+                <table className={styles.table}>
+                    <thead className={styles.thead}>
+                        <tr className={styles.tr}>
                             {cellDeployer.map((cellItem, cellIndex) => (
-                                <FrozenCell key={`body-${cellItem.param}`} isLastCell={cellIndex === exampleDate.length}>
-                                    {dataItem[cellItem.param]}
+                                <FrozenCell
+                                    isHeading
+                                    key={`head-${cellItem.param}`}
+                                    isLastCell={cellIndex === exampleDate.length}
+                                >
+                                    {cellItem.title}
                                 </FrozenCell>
                             ))}
+                            <th colSpan={timelineTimes.length || 1} className={styles.th}>
+                                <div className={styles.timelineTitle}>Шкала работ смены</div>
+                            </th>
+                        </tr>
+                        <tr className={styles.tr}>
                             {timelineTimes.map((timelineTime) => (
-                                <TimelineCell
-                                    key={timelineTime.getTime()}
-                                    time={timelineTime.getTime()}
-                                    dataItem={dataItem}
-                                />
+                                <th key={timelineTime.getTime()} className={`${styles.th} ${styles.time}`}>
+                                    <div>{getTimeFormat(timelineTime)}</div>
+                                </th>
                             ))}
                         </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody className={styles.tbody}>
+                        {data.map((dataItem) => (
+                            <tr key={dataItem.id} className={styles.tr}>
+                                {cellDeployer.map((cellItem, cellIndex) => (
+                                    <FrozenCell key={`body-${cellItem.param}`} isLastCell={cellIndex === exampleDate.length}>
+                                        {dataItem[cellItem.param]}
+                                    </FrozenCell>
+                                ))}
+                                {timelineTimes.map((timelineTime, timelineIndex) => (
+                                    <TimelineCell
+                                        key={GET_TIME(timelineTime)}
+                                        time={GET_TIME(timelineTime)}
+                                        dataItem={dataItem}
+                                        timelineIndex={timelineIndex}
+                                    />
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </WorkCreateContext.Provider>
     );
 };
 
