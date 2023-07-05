@@ -1,29 +1,46 @@
-import { STEP_MINUTES, TIME_STEP } from "./constants";
+import { FINISH_ID, START_ID, STEP_MINUTES, TIME_STEP } from "./constants";
 
-export const GET_TIME = (datetime) => {
+export const TIME = (datetime) => {
     if (!datetime) return new Date().getTime();
     return new Date(datetime).getTime();
+};
+
+export const EQUAL = (time1, time2) => {
+    return TIME(time1) === TIME(time2);
+};
+
+export const BETWEEN = (start, time, finish, isIncludedStart = false, isIncludedFinish = false) => {
+    const _start_ = TIME(start);
+    const _time_ = TIME(time);
+    const _finish_ = TIME(finish);
+
+    const startTimeResult = isIncludedStart ? _start_ <= _time_ : _start_ < _time_;
+    const finishTimeResult = isIncludedFinish ? _time_ <= _finish_ : _time_ < _finish_;
+
+    return startTimeResult && finishTimeResult;
 };
 
 export const getTimeFormat = (dateTime) => {
     return new Date(dateTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 };
 
-export const createWork = (workName, startTimeShift, finishTimeShift) => {
+export const createWork = (workName, startTime, finishTime) => {
     const currentTime = new Date();
-    const shiftedTime = new Date(currentTime);
-    shiftedTime.setHours(8);
-    const editedTime = roundTimeByStep(shiftedTime);
+    currentTime.setSeconds(0);
+    currentTime.setMilliseconds(0);
 
-    const startTime = new Date(editedTime.getTime() + startTimeShift * 60 * 1000);
-    const finishTime = new Date(
-        editedTime.getTime() + finishTimeShift * 60 * 1000 + (startTimeShift === finishTimeShift ? TIME_STEP : 0)
-    );
+    const computedStartTime = new Date(currentTime);
+    computedStartTime.setHours(startTime.split(":")[0]);
+    computedStartTime.setMinutes(startTime.split(":")[1]);
+
+    const computedFinishTime = new Date(currentTime);
+    computedFinishTime.setHours(finishTime.split(":")[0]);
+    computedFinishTime.setMinutes(finishTime.split(":")[1]);
 
     return {
         workName,
-        startTime,
-        finishTime,
+        startTime: computedStartTime,
+        finishTime: computedFinishTime,
     };
 };
 
@@ -43,15 +60,28 @@ export const createTimelineTimes = (startTime, finishTime) => {
     let currentTime = startTime;
 
     while (currentTime <= finishTime) {
-        result.push(new Date(currentTime));
-        currentTime = GET_TIME(currentTime) + STEP_MINUTES * 60 * 1000;
+        const time = new Date(currentTime);
+        [FINISH_ID, START_ID].forEach((timeType) => {
+            result.push({
+                id: `${timeType}-${time.getTime()}`,
+                time,
+                type: timeType,
+            });
+        });
+        currentTime = TIME(currentTime) + STEP_MINUTES * 60 * 1000;
     }
 
-    return result;
+    return result.map((resultItem, index) => ({
+        ...resultItem,
+        order: index,
+        isFirstCell: index === 0,
+        isNotCornerCell: index !== 0 && index !== result.length - 1,
+        isLastTime: index === result.length - 1 || index === result.length - 2,
+    }));
 };
 
-const calculateWorkSize = (work) => {
-    return (GET_TIME(work.finishTime) - GET_TIME(work.startTime)) / TIME_STEP + 1;
+export const calculateColSpan = (startTime, finishTime) => {
+    return 2 + ((TIME(finishTime) - TIME(startTime)) / TIME_STEP - 1) * 2;
 };
 
 export const computeAllWorkSize = (data, timelineTimes) => {
@@ -59,40 +89,40 @@ export const computeAllWorkSize = (data, timelineTimes) => {
         const computedDataTimeline = dataItem.timeline.map((work, workIndex) => ({
             ...work,
             id: `${dataItem.id}-${workIndex + 1}`,
-            colSpan: calculateWorkSize(work),
+            colSpan: calculateColSpan(work.startTime, work.finishTime),
+            hiddenRange: [work.startTime, work.finishTime],
         }));
+        const allHiddenRages = computedDataTimeline.map((work) => work.hiddenRange);
         return {
             ...dataItem,
             timeline: computedDataTimeline,
-            workCellIndexes: [...timelineTimes]
-                .map((timelineTime, timelineIndex) => ({
-                    time: timelineTime,
-                    index: timelineIndex,
-                }))
+            allHiddenRages,
+            workCellIndexes: timelineTimes
                 .filter((timelineTime) =>
-                    computedDataTimeline.some(
-                        (dataTimeline) =>
-                            GET_TIME(dataTimeline.startTime) <= GET_TIME(timelineTime.time) &&
-                            GET_TIME(timelineTime.time) <= GET_TIME(dataTimeline.finishTime)
+                    allHiddenRages.some((hiddenRange) =>
+                        BETWEEN(hiddenRange[0], timelineTime.time, hiddenRange[1], true, true)
                     )
                 )
                 .map((timelineTime) => ({
-                    isStart: computedDataTimeline.some(
-                        (dataTimeline) => GET_TIME(dataTimeline.startTime) === GET_TIME(timelineTime.time)
+                    displayable: !allHiddenRages.some((hiddenRange) =>
+                        BETWEEN(hiddenRange[0], timelineTime.time, hiddenRange[1], false, timelineTime.type !== START_ID)
                     ),
-                    index: timelineTime.index,
+                    enabled:
+                        !allHiddenRages.some((hiddenRange) =>
+                            EQUAL(hiddenRange[timelineTime.type === FINISH_ID ? 1 : 0], timelineTime.time)
+                        ) &&
+                        (timelineTime.isNotCornerCell ||
+                            !computedDataTimeline.some((computedDataTimelineItem) =>
+                                EQUAL(
+                                    timelineTime.isFirstCell
+                                        ? computedDataTimelineItem.startTime
+                                        : computedDataTimelineItem.finishTime,
+                                    timelineTime.time
+                                )
+                            )),
+                    id: timelineTime.id,
+                    type: timelineTime.type,
                 })),
         };
     });
-};
-
-export const roundTimeByStep = (time) => {
-    time = time || new Date();
-    const resultTime = new Date(time);
-
-    resultTime.setSeconds(0);
-    resultTime.setMilliseconds(0);
-    resultTime.setMinutes(Math.floor(time.getMinutes() / STEP_MINUTES) * STEP_MINUTES);
-
-    return resultTime;
 };

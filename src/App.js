@@ -6,7 +6,7 @@ import { useState } from "react";
 
 function App() {
     const [timelineStartTime] = useState(new Date().setHours(7, 0, 0, 0));
-    const [timelineFinishTime] = useState(new Date().setHours(19, 0, 0, 0));
+    const [timelineFinishTime] = useState(new Date().setHours(12, 0, 0, 0));
 
     return (
         <div className="mainContainer">

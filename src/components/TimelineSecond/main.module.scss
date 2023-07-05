@@ -1,15 +1,5 @@
-.container {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 12px;
-    overflow-x: auto;
-}
-
-$paddingSize: 12px;
 $borderTable: 1px solid #ccc;
+$paddingSize: 12px;
 
 $numberOfFrozenCols: 3;
 $frozenContentWidth: 100px;
@@ -40,13 +30,28 @@ $timeCellWidth: 30px + 2 * $paddingSize;
     }
 }
 
+$headingBackground: #f5f5f5;
+$headingText: #333333;
+
+* {
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 12px;
+    overflow-x: auto;
+}
+
 .table {
     width: 100%;
     border-collapse: collapse;
-    font-family: Arial, sans-serif;
 
     .thead {
-        $headingBackground: #f2f2f2;
         background-color: $headingBackground;
         font-weight: bold;
         position: relative;
@@ -55,6 +60,7 @@ $timeCellWidth: 30px + 2 * $paddingSize;
         .tr .th {
             @include table-cell();
             background-color: $headingBackground;
+            color: $headingText;
             & > .timelineTitle {
                 width: max-content;
                 position: sticky;
@@ -75,6 +81,7 @@ $timeCellWidth: 30px + 2 * $paddingSize;
                     height: 8px;
                     transform: translateX(-50%);
                     border-left: $borderTable;
+                    border-left-width: 2px;
                 }
                 & > div {
                     width: 30px;
@@ -89,6 +96,17 @@ $timeCellWidth: 30px + 2 * $paddingSize;
                     border-left: $borderTable;
                     pointer-events: none;
                 }
+
+                $timeColor: #6aa1eb;
+                &.hover {
+                    color: $timeColor;
+                }
+                &.rangePoints {
+                    color: $timeColor;
+                    &.error {
+                        color: #ff5959;
+                    }
+                }
             }
         }
     }
@@ -102,27 +120,67 @@ $timeCellWidth: 30px + 2 * $paddingSize;
                 }
                 &.timeCell {
                     position: relative;
+                    border-right: $borderTable;
+                    border-right-width: 2px;
+                    border-right-style: dashed;
                     cursor: cell;
-                    &:hover {
-                        background-color: #e1f5f5;
+                    overflow: hidden;
+                    $arrowSize: 6px;
+                    $arrowShift: 20px;
+                    $arrowColor: #6aa1eb;
+                    &::before {
+                        content: "";
+                        position: absolute;
+                        top: 50%;
+                        transition: transform 0.2s;
+                        width: 0;
+                        height: 0;
+                        opacity: 0;
+                        border-top: $arrowSize solid transparent;
+                        border-bottom: $arrowSize solid transparent;
                     }
-                    &.currentTime {
-                        background-color: lightgreen;
-                        &:hover {
-                            background-color: rgb(151, 226, 151);
-                        }
+                    &.finish::before {
+                        right: 0;
+                        transform: translate(100%, -50%);
+                        border-right: calc($arrowSize * 2) solid $arrowColor;
+                    }
+                    &.start::before {
+                        left: 0;
+                        transform: translate(-100%, -50%);
+                        border-left: calc($arrowSize * 2) solid $arrowColor;
+                    }
+                    &.enabled.finish:hover::before {
+                        opacity: 0.5;
+                        transform: translate(-8px, -50%);
+                    }
+                    &.enabled.start:hover::before {
+                        opacity: 0.5;
+                        transform: translate(8px, -50%);
+                    }
+                    &.borderless {
+                        border-right: unset;
                     }
                     &.creating {
-                        background-color: lightsalmon;
+                        $creatingColor: #676fa3;
+                        $overlappingColor: #ff5959;
+
+                        background-color: $creatingColor;
+                        &.hideBorder {
+                            border-right-color: $creatingColor;
+                        }
                         &.overlapping {
-                            background-color: orangered;
+                            background-color: $overlappingColor;
+                            &.hideBorder {
+                                border-right-color: $overlappingColor;
+                            }
                         }
                     }
                     .createdTime {
                         $borderRadius: 8px;
                         $vPadding: 6px;
-                        $hPadding: $timeCellWidth / 2;
+                        $hPadding: 2px;
 
+                        cursor: pointer;
                         position: absolute;
                         top: $vPadding;
                         bottom: $vPadding;
@@ -140,12 +198,39 @@ $timeCellWidth: 30px + 2 * $paddingSize;
                     }
                 }
             }
+            color: #333333;
             &:nth-child(odd) .td {
-                background-color: #ffffff;
+                background-color: #f5f6f8;
             }
             &:nth-child(even) .td {
-                background-color: #f9f9f9;
+                background-color: #ffffff;
             }
         }
+        .helperRow {
+            visibility: hidden;
+            td {
+                padding: 0 $paddingSize;
+            }
+        }
+    }
+}
+
+.errorMessage {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 12px;
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 24px 10px;
+    font-size: 16px;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    strong {
+        font-size: 22px;
+        font-weight: bold;
     }
 }
