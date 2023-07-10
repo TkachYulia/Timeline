@@ -97,7 +97,7 @@ $headingText: #333333;
                     pointer-events: none;
                 }
 
-                $timeColor: #6aa1eb;
+                $timeColor: #5ec5ad;
                 &.hover {
                     color: $timeColor;
                 }
@@ -119,11 +119,11 @@ $headingText: #333333;
                     @include frozen-cell();
                 }
                 &.timeCell {
+                    padding: 0;
                     position: relative;
                     border-right: $borderTable;
                     border-right-width: 2px;
                     border-right-style: dashed;
-                    cursor: cell;
                     overflow: hidden;
                     $arrowSize: 6px;
                     $arrowShift: 20px;
@@ -149,11 +149,13 @@ $headingText: #333333;
                         transform: translate(-100%, -50%);
                         border-left: calc($arrowSize * 2) solid $arrowColor;
                     }
-                    &.enabled.finish:hover::before {
+                    &.enabled.finish:not(.isNotCornerCell):hover::before,
+                    &.enabled.finish.active::before {
                         opacity: 0.5;
                         transform: translate(-8px, -50%);
                     }
-                    &.enabled.start:hover::before {
+                    &.enabled.start:not(.isNotCornerCell):hover::before,
+                    &.enabled.start.active::before {
                         opacity: 0.5;
                         transform: translate(8px, -50%);
                     }
@@ -161,7 +163,7 @@ $headingText: #333333;
                         border-right: unset;
                     }
                     &.creating {
-                        $creatingColor: #676fa3;
+                        $creatingColor: #97dece;
                         $overlappingColor: #ff5959;
 
                         background-color: $creatingColor;
@@ -175,11 +177,15 @@ $headingText: #333333;
                             }
                         }
                     }
+                    &:not(.withWork) {
+                        cursor: cell;
+                    }
                     .createdTime {
                         $borderRadius: 8px;
                         $vPadding: 6px;
                         $hPadding: 2px;
 
+                        z-index: 50;
                         cursor: pointer;
                         position: absolute;
                         top: $vPadding;
@@ -192,9 +198,18 @@ $headingText: #333333;
                         display: flex;
                         justify-content: flex-start;
                         align-items: center;
-                        padding: 8px;
                         overflow: hidden;
-                        background-color: lightblue;
+                        background-color: #a0bfe0;
+                        &:hover {
+                            background-color: #8bb9eb;
+                        }
+                        .container {
+                            margin: 8px;
+                            font-size: 12px;
+                            overflow: hidden;
+                            position: relative;
+                            word-break: break-all;
+                        }
                     }
                 }
             }
@@ -204,6 +219,9 @@ $headingText: #333333;
             }
             &:nth-child(even) .td {
                 background-color: #ffffff;
+            }
+            &:last-child .td {
+                border-bottom: unset;
             }
         }
         .helperRow {

@@ -84,6 +84,17 @@ const TimelineCell = ({ timelineTime, dataItem }) => {
         } else {
             computedClassNames.push(styles.start);
         }
+        if (
+            EQUAL(hoverTime, timelineTime.time) &&
+            ((timelineTime.isFirstTime && timelineTime.type === START_ID) ||
+                (timelineTime.isLastTime && timelineTime.type === FINISH_ID))
+        ) {
+            computedClassNames.push(styles.active);
+        }
+    }
+
+    if (!timelineTime.isNotCornerCell) {
+        computedClassNames.push(styles.isNotCornerCell);
     }
 
     const handleClick = () => {
@@ -99,7 +110,7 @@ const TimelineCell = ({ timelineTime, dataItem }) => {
     };
 
     const handleMouseEnter = () => {
-        setHoverTime(enabledToCreateWork ? timelineTime.time : null);
+        setHoverTime(() => (enabledToCreateWork ? timelineTime.time : null));
         setRightDimensionAvailable(
             !dataItem?.timeline?.some((dataTimelineItem) => EQUAL(dataTimelineItem.startTime, timelineTime.time)) &&
                 !timelineTime.isLastTime &&
@@ -140,6 +151,10 @@ const TimelineCell = ({ timelineTime, dataItem }) => {
         }
     };
 
+    const handleMouseLeave = () => {
+        setHoverTime(() => null);
+    };
+
     if (dataItem.workCellIndexes.find((workCellIndex) => workCellIndex.id === timelineTime.id)?.displayable === false)
         return null;
 
@@ -151,14 +166,18 @@ const TimelineCell = ({ timelineTime, dataItem }) => {
     if (removeCellBorder) {
         computedClassNames.push(styles.hideBorder);
     }
+    if (!enabledToCreateWork) {
+        computedClassNames.push(styles.withWork);
+    }
     return (
         <td
             className={computedClassNames.join(" ")}
             colSpan={work?.colSpan || 1}
             onClick={handleClick}
             onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
         >
-            {hasWork && <CreatedTime matchingTimelineWork={matchingTimelineWork} />}
+            {hasWork && <CreatedTime work={matchingTimelineWork} />}
         </td>
     );
 };

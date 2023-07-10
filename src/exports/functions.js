@@ -76,12 +76,13 @@ export const createTimelineTimes = (startTime, finishTime) => {
         order: index,
         isFirstCell: index === 0,
         isNotCornerCell: index !== 0 && index !== result.length - 1,
+        isFirstTime: index === 0 || index === 1,
         isLastTime: index === result.length - 1 || index === result.length - 2,
     }));
 };
 
 export const calculateColSpan = (startTime, finishTime) => {
-    return 2 + ((TIME(finishTime) - TIME(startTime)) / TIME_STEP - 1) * 2;
+    return Math.max(Math.ceil(2 + ((TIME(finishTime) - TIME(startTime)) / TIME_STEP - 1) * 2), 2);
 };
 
 export const computeAllWorkSize = (data, timelineTimes) => {

@@ -54,8 +54,6 @@ const cellDeployer = [
 ];
 
 const TimelineSecond = ({ startTime: timelineStartTime, finishTime: timelineFinishTime }) => {
-    const [messageApi, contextHolder] = message.useMessage();
-
     const isTimelineCorrect = timelineStartTime < timelineFinishTime;
 
     const [timelineTimes, setTimelineTimes] = useState(createTimelineTimes(timelineStartTime, timelineFinishTime));
@@ -89,6 +87,7 @@ const TimelineSecond = ({ startTime: timelineStartTime, finishTime: timelineFini
         setCreatingHoverTime(null);
         setOverlapping(false);
         setRightDimension(true);
+        setRightDimensionAvailable(true);
     };
 
     const handleClickTimeCell = (id, timelineTime) => {
@@ -98,20 +97,9 @@ const TimelineSecond = ({ startTime: timelineStartTime, finishTime: timelineFini
 
             if (!isOverlapping) {
                 message.success(
-                    <div style={{ width: "200px", textAlign: "left" }}>
+                    <div style={{ textAlign: "left" }}>
                         <h3>New work created!</h3>
-                        <div
-                            style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                        >
-                            <span>FROM:</span>
-                            <span>{getDateTime(startTime)}</span>
-                        </div>
-                        <div
-                            style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                        >
-                            <span>TILL:</span>
-                            <span>{getDateTime(finishTime)}</span>
-                        </div>
+                        <span>{getTimeFormat(startTime)} - {getTimeFormat(finishTime)}</span>
                     </div>
                 );
                 setData((prevData) =>
@@ -137,6 +125,7 @@ const TimelineSecond = ({ startTime: timelineStartTime, finishTime: timelineFini
                 );
             }
             cancelCreating();
+            setHoverTime(null);
         } else {
             setCreating(true);
             setCreatingDataId(id);
