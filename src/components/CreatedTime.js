@@ -1,4 +1,4 @@
-import { getTimeFormat } from "../../exports/functions";
+import { getTimeFormat } from "../exports/functions";
 import styles from "./main.module.scss";
 
 const CreatedTime = ({ work }) => {

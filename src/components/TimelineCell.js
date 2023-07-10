@@ -1,10 +1,10 @@
 import { useContext } from "react";
-import { TIME, BETWEEN, EQUAL } from "../../exports/functions";
+import { TIME, BETWEEN, EQUAL } from "../exports/functions";
 import CreatedTime from "./CreatedTime";
 import styles from "./main.module.scss";
 import { message } from "antd";
-import WorkCreateContext from "../../context/WorkCreateContext";
-import { FINISH_ID, START_ID, TIME_STEP } from "../../exports/constants";
+import WorkCreateContext from "../context/WorkCreateContext";
+import { FINISH_ID, START_ID, TIME_STEP } from "../exports/constants";
 
 const TimelineCell = ({ timelineTime, dataItem }) => {
     const workCreateContext = useContext(WorkCreateContext);

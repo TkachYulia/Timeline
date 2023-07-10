@@ -9,12 +9,12 @@ import {
     createWork,
     getDateTime,
     getTimeFormat,
-} from "../../exports/functions";
+} from "../exports/functions";
 import styles from "./main.module.scss";
 import FrozenCell from "./FrozenCell";
 import TimelineCell from "./TimelineCell";
-import WorkCreateContext from "../../context/WorkCreateContext";
-import { START_ID, TIME_STEP } from "../../exports/constants";
+import WorkCreateContext from "../context/WorkCreateContext";
+import { START_ID, TIME_STEP } from "../exports/constants";
 import { useRef } from "react";
 
 const exampleDate = [

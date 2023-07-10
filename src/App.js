@@ -1,6 +1,6 @@
 import "./resetStyles.css";
 import "./App.css";
-import TimelineSecond from "./components/TimelineSecond";
+import Timeline from "./components";
 import { useState } from "react";
 
 function App() {
@@ -9,7 +9,7 @@ function App() {
 
     return (
         <div className="mainContainer">
-            <TimelineSecond startTime={timelineStartTime} finishTime={timelineFinishTime} />
+            <Timeline startTime={timelineStartTime} finishTime={timelineFinishTime} />
         </div>
     );
 }
