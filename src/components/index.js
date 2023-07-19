@@ -1,63 +1,34 @@
-import Tippy, { useSingleton } from "@tippyjs/react";
 import { useEffect, useState } from "react";
-import { message } from "antd";
 import {
     EQUAL,
     TIME,
     computeAllWorkSize,
     createTimelineTimes,
-    createWork,
     getDateTime,
+    getDeepValue,
     getTimeFormat,
+    getTimeRange,
 } from "../exports/functions";
 import styles from "./main.module.scss";
 import FrozenCell from "./FrozenCell";
 import TimelineCell from "./TimelineCell";
 import WorkCreateContext from "../context/WorkCreateContext";
-import { START_ID, TIME_STEP } from "../exports/constants";
+import { PORTAL_ID, START_ID, TIME_STEP } from "../exports/constants";
 import { useRef } from "react";
 
-const exampleDate = [
-    {
-        id: 1,
-        transport: "КАМАЗ 53215 № 2215",
-        inventaryNumber: "7036320",
-        transportCode: "100500",
-        timeline: [createWork("Some easy work", "8:00", "8:30"), createWork("Other harder work", "11:00", "12:00")],
-    },
-    {
-        id: 2,
-        transport: "КАМАЗ 53215 № 4487",
-        inventaryNumber: "6854998",
-        transportCode: "155044",
-        timeline: [
-            createWork("Something little", "7:00", "7:15"),
-            createWork("Repair works 1", "8:15", "9:15"),
-            createWork("Repair works 2", "9:30", "11:15"),
-        ],
-    },
-];
+const Timeline = ({ initProps }) => {
+    const {
+        columns: tableColumns,
+        creatable: timelineCreatable,
+        finishTime: timelineFinishTime,
+        startTime: timelineStartTime,
+        data: initialData,
+    } = initProps;
 
-const cellDeployer = [
-    {
-        title: "Транспорт",
-        param: "transport",
-    },
-    {
-        title: "Инвентарный номер",
-        param: "inventaryNumber",
-    },
-    {
-        title: "Код транспорта",
-        param: "transportCode",
-    },
-];
-
-const TimelineSecond = ({ startTime: timelineStartTime, finishTime: timelineFinishTime }) => {
     const isTimelineCorrect = timelineStartTime < timelineFinishTime;
 
     const [timelineTimes, setTimelineTimes] = useState(createTimelineTimes(timelineStartTime, timelineFinishTime));
-    const [data, setData] = useState(computeAllWorkSize(exampleDate, timelineTimes));
+    const [data, setData] = useState(computeAllWorkSize(initialData, timelineTimes));
 
     const [isCreating, setCreating] = useState(false);
     const [creatingDataId, setCreatingDataId] = useState(null);
@@ -68,17 +39,13 @@ const TimelineSecond = ({ startTime: timelineStartTime, finishTime: timelineFini
     const [isRightDimensionAvailable, setRightDimensionAvailable] = useState(true);
 
     const [hoverTime, setHoverTime] = useState(null);
+    const [hoverDataId, setHoverDataId] = useState(null);
 
     const tableRef = useRef(null);
 
     useEffect(() => {
         setTimelineTimes(createTimelineTimes(timelineStartTime, timelineFinishTime));
     }, [timelineStartTime, timelineFinishTime]);
-
-    // Tooltip
-    const [source, target] = useSingleton({
-        overrides: ["delay", "arrow"],
-    });
 
     const cancelCreating = () => {
         setCreating(false);
@@ -96,12 +63,7 @@ const TimelineSecond = ({ startTime: timelineStartTime, finishTime: timelineFini
             const finishTime = Math.max(creatingStartTime, creatingHoverTime);
 
             if (!isOverlapping) {
-                message.success(
-                    <div style={{ textAlign: "left" }}>
-                        <h3>New work created!</h3>
-                        <span>{getTimeFormat(startTime)} - {getTimeFormat(finishTime)}</span>
-                    </div>
-                );
+                console.log(`New work created!\n${getTimeFormat(startTime)} - ${getTimeFormat(finishTime)}`);
                 setData((prevData) =>
                     computeAllWorkSize(
                         prevData.map((dataItem) => {
@@ -114,6 +76,10 @@ const TimelineSecond = ({ startTime: timelineStartTime, finishTime: timelineFini
                                             workName: "Created",
                                             startTime,
                                             finishTime,
+                                            color: {
+                                                background: "#9ED5C5",
+                                                hoverBackground: "#8EC3B0",
+                                            }
                                         },
                                     ],
                                 };
@@ -147,14 +113,17 @@ const TimelineSecond = ({ startTime: timelineStartTime, finishTime: timelineFini
         creatingStartTime,
         handleClickTimeCell,
         hoverTime,
+        hoverDataId,
         isCreating,
         isOverlapping,
         isRightDimension,
         setCreatingHoverTime,
         setHoverTime,
+        setHoverDataId,
         setOverlapping,
         setRightDimension,
         setRightDimensionAvailable,
+        timelineCreatable,
     };
 
     useEffect(() => {
@@ -201,40 +170,46 @@ const TimelineSecond = ({ startTime: timelineStartTime, finishTime: timelineFini
         ) {
             resultClasses.push(styles.hover);
         }
+        if (timelineTime.timeDisplayable) {
+            resultClasses.push(styles.timeDisplayable);
+        }
         return resultClasses.join(" ");
     };
 
     return (
         <WorkCreateContext.Provider value={workCreateContext}>
             <div className={styles.container}>
-                <Tippy singleton={source} delay={500} />
                 {isTimelineCorrect ? (
                     <table className={styles.table} ref={tableRef}>
                         <thead className={styles.thead}>
                             <tr className={styles.tr}>
-                                {cellDeployer.map((cellItem, cellIndex) => (
+                                {tableColumns.map((column, columnIndex) => (
                                     <FrozenCell
                                         isHeading
-                                        key={`head-${cellItem.param}`}
-                                        isLastCell={cellIndex === exampleDate.length}
+                                        key={`head-${column.param}`}
+                                        isLastCell={columnIndex === initialData.length}
                                     >
-                                        {cellItem.title}
+                                        {column.title}
                                     </FrozenCell>
                                 ))}
                                 <th colSpan={timelineTimes.length || 1} className={styles.th}>
-                                    <div className={styles.timelineTitle}>Шкала работ смены</div>
+                                    <div className={styles.timelineTitle}>
+                                        Шкала работ смены: {getTimeRange(timelineStartTime, timelineFinishTime)}
+                                    </div>
                                 </th>
                             </tr>
                             <tr className={styles.tr}>
                                 {timelineTimes
                                     .filter((timelineTime) => timelineTime.type === START_ID)
-                                    .map((timelineTime) => (
+                                    .map((timelineTime, timelineTimeIndex) => (
                                         <th
                                             key={timelineTime.id}
                                             className={getHeadingTitleClasses(timelineTime)}
                                             colSpan={2}
+                                            style={{ zIndex: timelineTimes.length - timelineTimeIndex }}
                                         >
-                                            <div>{getTimeFormat(timelineTime.time)}</div>
+                                            <div className={styles.helperHeader} />
+                                            {timelineTime.timeDisplayable && <div>{getTimeFormat(timelineTime.time)}</div>}
                                         </th>
                                     ))}
                             </tr>
@@ -242,12 +217,22 @@ const TimelineSecond = ({ startTime: timelineStartTime, finishTime: timelineFini
                         <tbody className={styles.tbody}>
                             {data.map((dataItem) => (
                                 <tr key={dataItem.id} className={styles.tr}>
-                                    {cellDeployer.map((cellItem, cellIndex) => (
+                                    {tableColumns.map((column, columnIndex) => (
                                         <FrozenCell
-                                            key={`body-${cellItem.param}`}
-                                            isLastCell={cellIndex === exampleDate.length}
+                                            key={`body-${column.param}`}
+                                            isLastCell={columnIndex === initialData.length}
                                         >
-                                            {dataItem[cellItem.param]}
+                                            {columnIndex === 0 &&
+                                                dataItem.workCount.original !== dataItem.workCount.erased && (
+                                                    <>
+                                                        <span style={{ color: "red" }}>
+                                                            [Скрыто:{" "}
+                                                            {dataItem.workCount.original - dataItem.workCount.erased}]
+                                                        </span>
+                                                        <br />
+                                                    </>
+                                                )}
+                                            {getDeepValue(dataItem, column.param)}
                                         </FrozenCell>
                                     ))}
                                     {timelineTimes.map((timelineTime) => (
@@ -260,8 +245,8 @@ const TimelineSecond = ({ startTime: timelineStartTime, finishTime: timelineFini
                                 </tr>
                             ))}
                             <tr className={styles.helperRow}>
-                                {cellDeployer.map((cellItem) => (
-                                    <td key={`helper-${cellItem.param}`} />
+                                {tableColumns.map((column) => (
+                                    <td key={`helper-${column.param}`} />
                                 ))}
                                 {timelineTimes.map((timelineTime) => (
                                     <td key={`helper-${timelineTime.id}`} />
@@ -277,9 +262,10 @@ const TimelineSecond = ({ startTime: timelineStartTime, finishTime: timelineFini
                         </span>
                     </div>
                 )}
+                <div id={PORTAL_ID} style={{ zIndex: 1000 }} />
             </div>
         </WorkCreateContext.Provider>
     );
 };
 
-export default TimelineSecond;
+export default Timeline;

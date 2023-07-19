@@ -1,0 +1,17 @@
+{
+  "mode": "basic",
+  "appName": "ASUT",
+  "appUrl": "https://asut-clone.erg.kz/apex/f?p=103",
+  "srcFolder": "./src",
+  "launch": {
+    "port": 4000,
+    "ghostMode": false,
+    "notify": true,
+    "open": true,
+    "openBuilder": false
+  },
+  "upload": {
+    "destination": "application",
+    "credentialsPath": "./apexnitro.cred.json"
+  }
+}

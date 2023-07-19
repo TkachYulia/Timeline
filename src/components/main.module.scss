@@ -1,8 +1,8 @@
-$borderTable: 1px solid #ccc;
+$borderTable: 1px solid rgba(0, 0, 0, 0.1);
 $paddingSize: 12px;
 
 $numberOfFrozenCols: 3;
-$frozenContentWidth: 100px;
+$frozenContentWidth: 110px;
 $frozenCellOffset: $frozenContentWidth + 2 * $paddingSize;
 $timeCellWidth: 30px + 2 * $paddingSize;
 
@@ -30,12 +30,8 @@ $timeCellWidth: 30px + 2 * $paddingSize;
     }
 }
 
-$headingBackground: #f5f5f5;
+$headingBackground: #fff;
 $headingText: #333333;
-
-* {
-    font-family: Arial, sans-serif;
-}
 
 .container {
     width: 100%;
@@ -43,212 +39,322 @@ $headingText: #333333;
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
-    gap: 12px;
     overflow-x: auto;
-}
+    border: $borderTable;
 
-.table {
-    width: 100%;
-    border-collapse: collapse;
-
-    .thead {
-        background-color: $headingBackground;
-        font-weight: bold;
-        position: relative;
-        z-index: 10;
-
-        .tr .th {
-            @include table-cell();
-            background-color: $headingBackground;
-            color: $headingText;
-            & > .timelineTitle {
-                width: max-content;
-                position: sticky;
-                z-index: 10;
-                left: $numberOfFrozenCols * $frozenCellOffset + $paddingSize + $numberOfFrozenCols;
-            }
-            &.frozen {
-                @include frozen-cell();
-            }
-            &.time {
-                position: relative;
-                &::before {
-                    content: "";
-                    position: absolute;
-                    bottom: 0;
-                    left: 50%;
-                    width: 0px;
-                    height: 8px;
-                    transform: translateX(-50%);
-                    border-left: $borderTable;
-                    border-left-width: 2px;
-                }
-                & > div {
-                    width: 30px;
-                }
-                & .vertLine {
-                    position: absolute;
-                    z-index: 10;
-                    top: 100%;
-                    left: 50%;
-                    width: 0px;
-                    transform: translateX(-50%);
-                    border-left: $borderTable;
-                    pointer-events: none;
-                }
-
-                $timeColor: #5ec5ad;
-                &.hover {
-                    color: $timeColor;
-                }
-                &.rangePoints {
-                    color: $timeColor;
-                    &.error {
-                        color: #ff5959;
-                    }
-                }
-            }
-        }
+    * {
+        padding: 0;
+        margin: 0;
+        border: 0;
+        font-family: Arial, sans-serif;
+    }
+    *,
+    *:before,
+    *:after {
+        -moz-box-sizing: border-box;
+        -webkit-box-sizing: border-box;
+        box-sizing: border-box;
+    }
+    :focus,
+    :active {
+        outline: none;
+    }
+    a:focus,
+    a:active {
+        outline: none;
     }
 
-    .tbody {
-        .tr {
-            .td {
+    nav,
+    footer,
+    header,
+    aside {
+        display: block;
+    }
+
+    html,
+    body {
+        height: 100%;
+        width: 100%;
+        font-size: 100%;
+        line-height: 1;
+        font-size: 14px;
+        -ms-text-size-adjust: 100%;
+        -moz-text-size-adjust: 100%;
+        -webkit-text-size-adjust: 100%;
+    }
+    input,
+    button,
+    textarea {
+        font-family: inherit;
+    }
+
+    input::-ms-clear {
+        display: none;
+    }
+    button {
+        cursor: pointer;
+    }
+    button::-moz-focus-inner {
+        padding: 0;
+        border: 0;
+    }
+    a,
+    a:visited {
+        text-decoration: none;
+    }
+    a:hover {
+        text-decoration: none;
+    }
+    ul li {
+        list-style: none;
+    }
+    img {
+        vertical-align: top;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-size: inherit;
+        font-weight: 400;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+
+        .thead {
+            background-color: $headingBackground;
+            font-weight: bold;
+            position: relative;
+            z-index: 10;
+
+            .tr .th {
                 @include table-cell();
+                background-color: $headingBackground;
+                padding-left: 0;
+                padding-right: 0;
+                color: $headingText;
+                & > .timelineTitle {
+                    width: max-content;
+                    position: sticky;
+                    z-index: 10;
+                    left: $numberOfFrozenCols * $frozenCellOffset + $paddingSize + $numberOfFrozenCols;
+                }
                 &.frozen {
                     @include frozen-cell();
+                    z-index: 1000;
                 }
-                &.timeCell {
-                    padding: 0;
+                &.time {
                     position: relative;
-                    border-right: $borderTable;
-                    border-right-width: 2px;
-                    border-right-style: dashed;
-                    overflow: hidden;
-                    $arrowSize: 6px;
-                    $arrowShift: 20px;
-                    $arrowColor: #6aa1eb;
                     &::before {
                         content: "";
                         position: absolute;
-                        top: 50%;
-                        transition: transform 0.2s;
-                        width: 0;
-                        height: 0;
-                        opacity: 0;
-                        border-top: $arrowSize solid transparent;
-                        border-bottom: $arrowSize solid transparent;
+                        bottom: 0;
+                        left: 50%;
+                        width: 0px;
+                        height: 8px;
+                        transform: translateX(-50%);
+                        border-left: $borderTable;
+                        border-left-width: 2px;
                     }
-                    &.finish::before {
-                        right: 0;
-                        transform: translate(100%, -50%);
-                        border-right: calc($arrowSize * 2) solid $arrowColor;
+                    & > div {
+                        text-align: center;
+                        margin: 0 auto;
+                        color: #a7a7a7;
+                        font-size: 14px;
+                        writing-mode: vertical-rl;
+                        text-orientation: mixed;
+                        transform: rotate(-180deg);
                     }
-                    &.start::before {
-                        left: 0;
-                        transform: translate(-100%, -50%);
-                        border-left: calc($arrowSize * 2) solid $arrowColor;
+                    .helperHeader {
+                        width: 18px;
+                        height: 5px;
                     }
-                    &.enabled.finish:not(.isNotCornerCell):hover::before,
-                    &.enabled.finish.active::before {
-                        opacity: 0.5;
-                        transform: translate(-8px, -50%);
-                    }
-                    &.enabled.start:not(.isNotCornerCell):hover::before,
-                    &.enabled.start.active::before {
-                        opacity: 0.5;
-                        transform: translate(8px, -50%);
-                    }
-                    &.borderless {
-                        border-right: unset;
-                    }
-                    &.creating {
-                        $creatingColor: #97dece;
-                        $overlappingColor: #ff5959;
-
-                        background-color: $creatingColor;
-                        &.hideBorder {
-                            border-right-color: $creatingColor;
-                        }
-                        &.overlapping {
-                            background-color: $overlappingColor;
-                            &.hideBorder {
-                                border-right-color: $overlappingColor;
-                            }
-                        }
-                    }
-                    &:not(.withWork) {
-                        cursor: cell;
-                    }
-                    .createdTime {
-                        $borderRadius: 8px;
-                        $vPadding: 6px;
-                        $hPadding: 2px;
-
-                        z-index: 50;
-                        cursor: pointer;
+                    & .vertLine {
                         position: absolute;
-                        top: $vPadding;
-                        bottom: $vPadding;
-                        left: $hPadding;
-                        right: $hPadding;
-                        border-radius: $borderRadius;
-                        cursor: pointer;
+                        z-index: 10;
+                        top: 100%;
+                        left: 50%;
+                        width: 0px;
+                        transform: translateX(-50%);
+                        border-left: $borderTable;
+                        pointer-events: none;
+                    }
 
-                        display: flex;
-                        justify-content: flex-start;
-                        align-items: center;
-                        overflow: hidden;
-                        background-color: #a0bfe0;
-                        &:hover {
-                            background-color: #8bb9eb;
+                    $timeColor: #5ec5ad;
+                    &.hover {
+                        color: $timeColor;
+                    }
+                    &.rangePoints {
+                        color: $timeColor;
+                        &.error {
+                            color: #ff5959;
                         }
-                        .container {
-                            margin: 8px;
-                            font-size: 12px;
-                            overflow: hidden;
-                            position: relative;
-                            word-break: break-all;
-                        }
+                    }
+                    &:not(.timeDisplayable) {
+                        // padding: 0;
+                    }
+                    &.timeDisplayable {
+                        width: max-content;
                     }
                 }
             }
-            color: #333333;
-            &:nth-child(odd) .td {
-                background-color: #f5f6f8;
+        }
+
+        .tbody {
+            .tr {
+                .td {
+                    @include table-cell();
+                    &.frozen {
+                        @include frozen-cell();
+                        opacity: 0.5;
+                    }
+                    &.timeCell {
+                        padding: 0 3px;
+                        position: relative;
+                        border-right: $borderTable;
+                        border-right-width: 1px;
+                        border-right-style: dashed;
+                        $arrowSize: 4px;
+                        $arrowShift: 20px;
+                        $arrowColor: #6aa1eb;
+                        &::before {
+                            content: "";
+                            position: absolute;
+                            top: 50%;
+                            transition: transform 0.2s;
+                            width: 0;
+                            height: 0;
+                            opacity: 0;
+                            border-top: $arrowSize solid transparent;
+                            border-bottom: $arrowSize solid transparent;
+                            pointer-events: none;
+                        }
+                        &.finish::before {
+                            right: 0;
+                            transform: translate(100%, -50%);
+                            border-right: calc($arrowSize * 2) solid $arrowColor;
+                        }
+                        &.start::before {
+                            left: 0;
+                            transform: translate(-100%, -50%);
+                            border-left: calc($arrowSize * 2) solid $arrowColor;
+                        }
+                        &.enabled.finish:not(.isNotCornerCell):hover::before,
+                        &.enabled.finish.active::before {
+                            opacity: 0.5;
+                            transform: translate(0, -50%);
+                        }
+                        &.enabled.start:not(.isNotCornerCell):hover::before,
+                        &.enabled.start.active::before {
+                            opacity: 0.5;
+                            transform: translate(0, -50%);
+                        }
+                        &.borderless {
+                            border-right: unset;
+                        }
+                        &.creating {
+                            $creatingColor: #97dece;
+                            $overlappingColor: #ff5959;
+
+                            background-color: $creatingColor;
+                            &.hideBorder {
+                                border-right-color: $creatingColor;
+                            }
+                            &.overlapping {
+                                background-color: $overlappingColor;
+                                &.hideBorder {
+                                    border-right-color: $overlappingColor;
+                                }
+                            }
+                        }
+                        &:not(.withWork) {
+                            cursor: pointer;
+                        }
+                        .createdTime {
+                            $borderRadius: 8px;
+                            $vPadding: 6px;
+                            $hPadding: 2px;
+
+                            color: #333333;
+                            z-index: 50;
+                            cursor: pointer;
+                            position: absolute;
+                            top: $vPadding;
+                            bottom: $vPadding;
+                            left: $hPadding;
+                            right: $hPadding;
+                            border-radius: $borderRadius;
+                            overflow: hidden;
+                            .workContainer {
+                                width: 100%;
+                                height: 100%;
+                                position: relative;
+                                .workName {
+                                    width: 100%;
+                                    padding: 8px;
+                                    font-size: 12px;
+                                    white-space: nowrap;
+                                    overflow: hidden;
+                                    text-overflow: ellipsis;
+                                }
+                            }
+                        }
+                    }
+                }
+                color: #333333;
+                &:nth-child(odd) .td {
+                    background-color: #f5f6f8;
+                }
+                &:nth-child(even) .td {
+                    background-color: #ffffff;
+                }
+                &:last-child .td {
+                    border-bottom: unset;
+                }
             }
-            &:nth-child(even) .td {
-                background-color: #ffffff;
-            }
-            &:last-child .td {
-                border-bottom: unset;
+            .helperRow {
+                visibility: hidden;
             }
         }
-        .helperRow {
-            visibility: hidden;
-            td {
-                padding: 0 $paddingSize;
-            }
+    }
+
+    .errorMessage {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        gap: 12px;
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 24px 10px;
+        font-size: 16px;
+        border: 1px solid #f5c6cb;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        strong {
+            font-size: 22px;
+            font-weight: bold;
         }
     }
 }
-
-.errorMessage {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    gap: 12px;
-    background-color: #f8d7da;
-    color: #721c24;
-    padding: 24px 10px;
-    font-size: 16px;
-    border: 1px solid #f5c6cb;
+.tooltip {
+    max-width: 300px;
+    position: absolute;
+    padding: 6px 8px;
+    border: 1px solid #eee;
+    background-color: white;
     border-radius: 4px;
-    margin-bottom: 10px;
-    strong {
-        font-size: 22px;
-        font-weight: bold;
-    }
+    font-size: 14px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 4px;
+    flex-direction: column;
 }

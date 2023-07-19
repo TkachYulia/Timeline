@@ -2,7 +2,6 @@ import { useContext } from "react";
 import { TIME, BETWEEN, EQUAL } from "../exports/functions";
 import CreatedTime from "./CreatedTime";
 import styles from "./main.module.scss";
-import { message } from "antd";
 import WorkCreateContext from "../context/WorkCreateContext";
 import { FINISH_ID, START_ID, TIME_STEP } from "../exports/constants";
 
@@ -25,20 +24,22 @@ const TimelineCell = ({ timelineTime, dataItem }) => {
     const hasWork = !!matchingTimelineWork;
 
     const {
-        cancelCreating,
         creatingDataId,
         creatingHoverTime,
         creatingStartTime,
         handleClickTimeCell,
         hoverTime,
+        hoverDataId,
         isCreating,
         isOverlapping,
         isRightDimension,
         setCreatingHoverTime,
         setHoverTime,
+        setHoverDataId,
         setOverlapping,
         setRightDimension,
         setRightDimensionAvailable,
+        timelineCreatable,
     } = workCreateContext;
 
     const isCurrentDataRow = creatingDataId === dataItem.id;
@@ -51,7 +52,7 @@ const TimelineCell = ({ timelineTime, dataItem }) => {
     const isMiddleTime = BETWEEN(rangeStart, timelineTime.time, rangeFinish);
 
     const foundWorkCell = dataItem.workCellIndexes.find((workCellIndex) => workCellIndex.id === timelineTime.id);
-    const enabledToCreateWork = foundWorkCell === undefined || foundWorkCell?.enabled;
+    const enabledToCreateWork = timelineCreatable && (foundWorkCell === undefined || foundWorkCell?.enabled);
 
     if (
         isCurrentDataRow &&
@@ -85,6 +86,7 @@ const TimelineCell = ({ timelineTime, dataItem }) => {
             computedClassNames.push(styles.start);
         }
         if (
+            hoverDataId === dataItem.id &&
             EQUAL(hoverTime, timelineTime.time) &&
             ((timelineTime.isFirstTime && timelineTime.type === START_ID) ||
                 (timelineTime.isLastTime && timelineTime.type === FINISH_ID))
@@ -101,7 +103,7 @@ const TimelineCell = ({ timelineTime, dataItem }) => {
         if (isCreating && !isCurrentDataRow) return;
 
         if (isOverlapping) {
-            message.error("Невозможно создать действие: пересечение временных интервалов");
+            console.error("Невозможно создать действие: пересечение временных интервалов");
             // cancelCreating();
         } else if ((!isCreating || isCurrentDataRow) && !hasWork && enabledToCreateWork) {
             setRightDimension(timelineTime.type === START_ID);
@@ -111,6 +113,7 @@ const TimelineCell = ({ timelineTime, dataItem }) => {
 
     const handleMouseEnter = () => {
         setHoverTime(() => (enabledToCreateWork ? timelineTime.time : null));
+        setHoverDataId(dataItem.id);
         setRightDimensionAvailable(
             !dataItem?.timeline?.some((dataTimelineItem) => EQUAL(dataTimelineItem.startTime, timelineTime.time)) &&
                 !timelineTime.isLastTime &&
