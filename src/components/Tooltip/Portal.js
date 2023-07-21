@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { PORTAL_ID } from "../../exports/constants";
+import { TOOLTIP_PORTAL_ID } from "../../exports/constants";
 
 const Portal = ({ children }) => {
-    const portal = document.getElementById(PORTAL_ID);
+    const portal = document.getElementById(TOOLTIP_PORTAL_ID);
     const el = document.createElement("div");
 
     useEffect(() => {

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import Portal from "./Portal";
 import styles from "../main.module.scss";
-import { TIME, getTimeCount, getTimeRange } from "../../exports/functions";
+import PropsContext from "../../context/PropsContext";
 
 function Tooltip({ work, children }) {
+    const { FUNC } = useContext(PropsContext);
     const [coords, setCoords] = useState({ left: 0, top: 0 });
     const tooltipShift = 20;
 
@@ -38,8 +39,8 @@ function Tooltip({ work, children }) {
                     <div className={styles.tooltip} style={{ top: coords.top, left: coords.left }}>
                         <strong>{work.workName}</strong>
                         <span>
-                            {getTimeRange(work.originalStartTime, work.originalFinishTime, true)} (
-                            {getTimeCount(TIME(work.originalFinishTime) - TIME(work.originalStartTime))})
+                            {FUNC.getTimeRange(work.originalStartTime, work.originalFinishTime, true)} (
+                            {FUNC.getTimeCount(FUNC.TIME(work.originalFinishTime) - FUNC.TIME(work.originalStartTime))})
                         </span>
                     </div>
                 </Portal>
