@@ -5,54 +5,61 @@ import WorkCreateContext from "../context/WorkCreateContext";
 import { FINISH_ID, START_ID } from "../exports/constants";
 import PropsContext from "../context/PropsContext";
 
-const TimelineCell = ({ timelineTime, dataItem }) => {
+const TimelineCell = ({ timelineTime, dataItem, rowId, isLastGroup }) => {
     const { timelineStartTime, timelineFinishTime, byBreakPoint, CONST, FUNC } = useContext(PropsContext);
     const workCreateContext = useContext(WorkCreateContext);
 
     const computedClassNames = [styles.td, styles.timeCell];
 
+    const currentTimelineGroup = dataItem.groupedTimelines?.find((groupedTimeline) => groupedTimeline[0].rowId === rowId);
+
     const work = useMemo(
         () =>
-            dataItem.timeline.find(
+            currentTimelineGroup?.find(
                 (work) => FUNC.EQUAL(work.startTime, timelineTime.time) && timelineTime.type === START_ID
             ),
-        [dataItem.timeline]
+        [dataItem.groupedTimelines]
     );
 
     const matchingTimelineWork = useMemo(
         () =>
-            dataItem.timeline.find(
+            currentTimelineGroup?.find(
                 (timelineItem) =>
                     FUNC.EQUAL(timelineItem.startTime, timelineTime.time) &&
                     dataItem.workCellIndexes.some(
                         (workCellIndex) => workCellIndex.id === timelineTime.id && timelineTime.type === START_ID
                     )
             ),
-        [dataItem.timeline]
+        [dataItem.groupedTimelines]
     );
 
     const hasWork = !!matchingTimelineWork;
 
     const {
+        cancelCreating,
         creatingDataId,
+        creatingDataRowId,
         creatingHoverTime,
         creatingStartTime,
         handleClickTimeCell,
-        hoverTime,
         hoverDataId,
+        hoverDataRowId,
+        hoverTime,
         isCreating,
         isOverlapping,
         isRightDimension,
+        setCreatingDataRowId,
         setCreatingHoverTime,
-        setHoverTime,
         setHoverDataId,
+        setHoverDataRowId,
+        setHoverTime,
         setOverlapping,
         setRightDimension,
         setRightDimensionAvailable,
         timelineCreatable,
     } = workCreateContext;
 
-    const isCurrentDataRow = creatingDataId === dataItem.id;
+    const isCurrentData = creatingDataId === dataItem.id && creatingDataRowId === rowId;
 
     const rangeStart = isRightDimension ? creatingStartTime : creatingHoverTime;
     const rangeFinish = isRightDimension ? creatingHoverTime : creatingStartTime;
@@ -79,7 +86,7 @@ const TimelineCell = ({ timelineTime, dataItem }) => {
         (!byBreakPoint || timelineTime.breakPoint);
 
     const creatingCondition =
-        isCurrentDataRow &&
+        isCurrentData &&
         ((isStartTime &&
             ((isRightDimension && timelineTime.type === START_ID) ||
                 (!isRightDimension && timelineTime.type === FINISH_ID))) ||
@@ -111,6 +118,7 @@ const TimelineCell = ({ timelineTime, dataItem }) => {
         }
         if (
             hoverDataId === dataItem.id &&
+            hoverDataRowId === rowId &&
             FUNC.EQUAL(hoverTime, timelineTime.time) &&
             ((timelineTime.isFirstTime && timelineTime.type === START_ID) ||
                 (timelineTime.isLastTime && timelineTime.type === FINISH_ID))
@@ -125,39 +133,45 @@ const TimelineCell = ({ timelineTime, dataItem }) => {
 
     const tempIsRightDimensionAvailable = useMemo(
         () =>
-            !dataItem?.timeline?.some((dataTimelineItem) => FUNC.EQUAL(dataTimelineItem.startTime, timelineTime.time)) &&
+            !currentTimelineGroup?.some((dataTimelineItem) => FUNC.EQUAL(dataTimelineItem.startTime, timelineTime.time)) &&
             !timelineTime.isLastTime &&
             ((!timelineTime.isNotCornerCell && timelineTime.type === FINISH_ID) || timelineTime.type === START_ID),
-        [dataItem.timeline]
+        [dataItem.groupedTimelines]
     );
 
     const handleClick = () => {
-        if (isCreating && !isCurrentDataRow) return;
+        if (isCreating && !isCurrentData) return;
 
         if (isOverlapping) {
             console.error("Невозможно создать действие: пересечение временных интервалов");
             // cancelCreating();
-        } else if ((!isCreating || isCurrentDataRow) && !hasWork && (creatingCondition || enabledToCreateWork)) {
-            handleClickTimeCell(dataItem.id, isCreating ? creatingHoverTime : timelineTime, tempIsRightDimensionAvailable);
+        } else if ((!isCreating || isCurrentData) && !hasWork && (creatingCondition || enabledToCreateWork)) {
+            handleClickTimeCell(
+                dataItem.id,
+                rowId,
+                isCreating ? creatingHoverTime : timelineTime,
+                tempIsRightDimensionAvailable
+            );
         }
     };
 
     const handleMouseEnter = () => {
         setHoverTime(() => (enabledToCreateWork ? timelineTime.time : null));
         setHoverDataId(dataItem.id);
+        setHoverDataRowId(rowId);
         setRightDimensionAvailable(
-            !dataItem?.timeline?.some((dataTimelineItem) => FUNC.EQUAL(dataTimelineItem.startTime, timelineTime.time)) &&
+            !currentTimelineGroup?.some((dataTimelineItem) => FUNC.EQUAL(dataTimelineItem.startTime, timelineTime.time)) &&
                 !timelineTime.isLastTime &&
                 ((!timelineTime.isNotCornerCell && timelineTime.type === FINISH_ID) || timelineTime.type === START_ID)
         );
-        if (!isCurrentDataRow || !timelineTime.isNotCornerCell) return;
+        if (!isCurrentData || !timelineTime.isNotCornerCell) return;
 
         const hoveredTime = timelineTime.time;
 
         const rangeStartTime = Math.min(creatingStartTime, hoveredTime);
         const rangeFinishTime = Math.max(creatingStartTime, hoveredTime);
 
-        const isHoverRangeAvailable = !dataItem.timeline.some(
+        const isHoverRangeAvailable = !currentTimelineGroup.some(
             (dataTimelineItem) =>
                 FUNC.BETWEEN(rangeStartTime, dataTimelineItem.startTime, rangeFinishTime) ||
                 FUNC.BETWEEN(rangeStartTime, dataTimelineItem.finishTime, rangeFinishTime) ||
@@ -193,7 +207,7 @@ const TimelineCell = ({ timelineTime, dataItem }) => {
         return null;
 
     const removeCellBorder =
-        isCurrentDataRow &&
+        isCurrentData &&
         (isRightDimension
             ? (timelineTime.type === START_ID && isStartTime) || isMiddleTime
             : (timelineTime.type === START_ID && isHoverTime) || isMiddleTime);
@@ -203,8 +217,14 @@ const TimelineCell = ({ timelineTime, dataItem }) => {
     if (!enabledToCreateWork && !creatingCondition) {
         computedClassNames.push(styles.notClickable);
     }
+    if (dataItem.groupedTimelines.length === 1 || isLastGroup) {
+        computedClassNames.push(styles.lastTimeline);
+    }
+    if ((timelineTime.breakPoint && timelineTime.type === FINISH_ID) || matchingTimelineWork?.isEndsWithBreakPoint) {
+        computedClassNames.push(styles.breakPoint);
+    }
 
-    const showEnableZones = true;
+    const showEnableZones = false;
     return (
         <td
             className={computedClassNames.join(" ")}
@@ -214,7 +234,7 @@ const TimelineCell = ({ timelineTime, dataItem }) => {
             onMouseLeave={handleMouseLeave}
             style={showEnableZones ? { backgroundColor: enabledToCreateWork ? "#81CE85" : "#CE8181" } : {}}
         >
-            <div className={styles.helperContent} />
+            <div className={styles.helperBody} />
             {hasWork && <CreatedTime work={matchingTimelineWork} />}
         </td>
     );

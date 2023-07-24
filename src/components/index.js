@@ -5,7 +5,7 @@ import TimelineCell from "./TimelineCell";
 import WorkCreateContext from "../context/WorkCreateContext";
 import PropsContext from "../context/PropsContext";
 import { TOOLTIP_PORTAL_ID, START_ID, FINISH_ID } from "../exports/constants";
-import { useRef } from "react";
+import React, { useRef } from "react";
 
 const Timeline = ({ initProps }) => {
     const {
@@ -22,10 +22,13 @@ const Timeline = ({ initProps }) => {
     const isTimelineCorrect = timelineStartTime < timelineFinishTime;
 
     const [timelineTimes, setTimelineTimes] = useState(FUNC.createTimelineTimes(timelineStartTime, timelineFinishTime));
-    const [data, setData] = useState(FUNC.computeAllWorkSize(initialData, timelineTimes));
+    const [data, setData] = useState(FUNC.formulateWorkTimeline(initialData, timelineTimes));
+
+    const [frozenColumnsWidth, setFrozenColumnsWidth] = useState(tableColumns.map((_) => ({ updated: false, width: 100 })));
 
     const [isCreating, setCreating] = useState(false);
     const [creatingDataId, setCreatingDataId] = useState(null);
+    const [creatingDataRowId, setCreatingDataRowId] = useState(null);
     const [creatingStartTime, setCreatingStartTime] = useState(null);
     const [creatingHoverTime, setCreatingHoverTime] = useState(null);
     const [isOverlapping, setOverlapping] = useState(false);
@@ -34,16 +37,40 @@ const Timeline = ({ initProps }) => {
 
     const [hoverTime, setHoverTime] = useState(null);
     const [hoverDataId, setHoverDataId] = useState(null);
+    const [hoverDataRowId, setHoverDataRowId] = useState(null);
 
+    const containerRef = useRef(null);
     const tableRef = useRef(null);
+    const timelineTitleRef = useRef(null);
+
+    const [isContainerScrolled, setContainerScrolled] = useState(false);
+
+    const [timelineTitleHeight, setTimelineTitleHeight] = useState(0);
 
     useEffect(() => {
         setTimelineTimes(FUNC.createTimelineTimes(timelineStartTime, timelineFinishTime));
     }, [timelineStartTime, timelineFinishTime]);
 
+    useEffect(() => {
+        setFrozenColumnsWidth(() => tableColumns.map((_) => ({ updated: false, width: 100 })));
+    }, [tableColumns]);
+
+    useEffect(() => {
+        if (timelineTitleRef.current) {
+            setTimelineTitleHeight(() => timelineTitleRef.current.clientHeight);
+        }
+    }, [timelineTitleRef]);
+
+    const updateColumnWidth = (columnIndex, newWidth) => {
+        setFrozenColumnsWidth((prevWidths) =>
+            prevWidths.map((prevWidth, index) => (columnIndex === index ? { updated: true, width: newWidth } : prevWidth))
+        );
+    };
+
     const cancelCreating = () => {
         setCreating(false);
         setCreatingDataId(null);
+        setCreatingDataRowId(null);
         setCreatingStartTime(null);
         setCreatingHoverTime(null);
         setOverlapping(false);
@@ -51,7 +78,7 @@ const Timeline = ({ initProps }) => {
         setRightDimensionAvailable(true);
     };
 
-    const handleClickTimeCell = (id, timelineTime, tempIsRightDimensionAvailable) => {
+    const handleClickTimeCell = (id, rowId, timelineTime, tempIsRightDimensionAvailable) => {
         if (isCreating) {
             const startTime = Math.min(creatingStartTime, creatingHoverTime);
             const finishTime = Math.max(creatingStartTime, creatingHoverTime);
@@ -59,7 +86,7 @@ const Timeline = ({ initProps }) => {
             if (!isOverlapping) {
                 console.log(`New work created!\n${FUNC.getTimeFormat(startTime)} - ${FUNC.getTimeFormat(finishTime)}`);
                 setData((prevData) =>
-                    FUNC.computeAllWorkSize(
+                    FUNC.formulateWorkTimeline(
                         prevData.map((dataItem) => {
                             if (dataItem.id === id) {
                                 return {
@@ -67,7 +94,9 @@ const Timeline = ({ initProps }) => {
                                     timeline: [
                                         ...dataItem.timeline,
                                         {
-                                            workName: "Новая",
+                                            workName: `Новая - ${Math.floor(Math.random() * 20)
+                                                .toString()
+                                                .padStart(2, "0")}`,
                                             startTime,
                                             finishTime,
                                             color: {
@@ -89,6 +118,7 @@ const Timeline = ({ initProps }) => {
         } else {
             setCreating(true);
             setCreatingDataId(id);
+            setCreatingDataRowId(rowId);
             setCreatingStartTime(timelineTime.time);
             const computedHoverTime = tempIsRightDimensionAvailable
                 ? FUNC.TIME(timelineTime.time) + CONST.TIME_STEP_CREATE
@@ -103,17 +133,21 @@ const Timeline = ({ initProps }) => {
     const workCreateContext = {
         cancelCreating,
         creatingDataId,
+        creatingDataRowId,
         creatingHoverTime,
         creatingStartTime,
         handleClickTimeCell,
-        hoverTime,
         hoverDataId,
+        hoverDataRowId,
+        hoverTime,
         isCreating,
         isOverlapping,
         isRightDimension,
+        setCreatingDataRowId,
         setCreatingHoverTime,
-        setHoverTime,
         setHoverDataId,
+        setHoverDataRowId,
+        setHoverTime,
         setOverlapping,
         setRightDimension,
         setRightDimensionAvailable,
@@ -145,10 +179,27 @@ const Timeline = ({ initProps }) => {
         }
     }, [isCreating]);
 
-    const headingTitleClasses = [styles.th, styles.time];
+    useEffect(() => {
+        const checkScrollPosition = () => {
+            if (containerRef.current) {
+                const scrollLeft = containerRef.current.scrollLeft;
+                setContainerScrolled(scrollLeft !== 0);
+            }
+        };
+
+        if (containerRef.current) {
+            containerRef.current.addEventListener("scroll", checkScrollPosition);
+        }
+
+        return () => {
+            if (containerRef.current) {
+                containerRef.current.removeEventListener("scroll", checkScrollPosition);
+            }
+        };
+    }, []);
 
     const getHeadingTitleClasses = (timelineTime) => {
-        const resultClasses = [...headingTitleClasses];
+        const resultClasses = [styles.th, styles.time];
         if (FUNC.EQUAL(creatingStartTime, timelineTime.time) || FUNC.EQUAL(creatingHoverTime, timelineTime.time)) {
             resultClasses.push(styles.rangePoints);
             if (isOverlapping) {
@@ -172,6 +223,31 @@ const Timeline = ({ initProps }) => {
         return resultClasses.join(" ");
     };
 
+    const getTrStyles = (dataItem) => {
+        const result = [styles.tr];
+        if (dataItem.isEvenRow) {
+            result.push(styles.even);
+        }
+        return result.join(" ");
+    };
+
+    let freezeStyles = {};
+    if (frozenColumnsWidth.every((frozenColumnWidth) => frozenColumnWidth.updated)) {
+        freezeStyles = {
+            position: "sticky",
+            left: `${frozenColumnsWidth.reduce((sum, widthItem) => sum + widthItem.width + 1, 0) + 12}px`,
+        };
+    }
+
+    const frozenCellProps = (columnIndex) => ({
+        columnIndex,
+        isLast: columnIndex === tableColumns.length - 1,
+        frozenColumnsWidth,
+        updateColumnWidth,
+        isContainerScrolled,
+        timelineTitleHeight,
+    });
+
     return (
         <PropsContext.Provider
             value={{
@@ -183,22 +259,18 @@ const Timeline = ({ initProps }) => {
             }}
         >
             <WorkCreateContext.Provider value={workCreateContext}>
-                <div className={styles.container}>
+                <div className={styles.container} ref={containerRef}>
                     {isTimelineCorrect ? (
                         <table className={styles.table} ref={tableRef}>
                             <thead className={styles.thead}>
                                 <tr className={styles.tr}>
                                     {tableColumns.map((column, columnIndex) => (
-                                        <FrozenCell
-                                            isHeading
-                                            key={`head-${column.param}`}
-                                            isLastCell={columnIndex === initialData.length}
-                                        >
+                                        <FrozenCell isHeading key={`head-${column.param}`} {...frozenCellProps(columnIndex)}>
                                             {column.title}
                                         </FrozenCell>
                                     ))}
-                                    <th colSpan={timelineTimes.length || 1} className={styles.th}>
-                                        <div className={styles.timelineTitle}>
+                                    <th colSpan={timelineTimes.length || 1} className={styles.th} ref={timelineTitleRef}>
+                                        <div className={styles.timelineTitle} style={freezeStyles}>
                                             Шкала работ смены: {FUNC.getTimeRange(timelineStartTime, timelineFinishTime)}
                                         </div>
                                     </th>
@@ -211,9 +283,9 @@ const Timeline = ({ initProps }) => {
                                                 key={timelineTime.id}
                                                 className={getHeadingTitleClasses(timelineTime)}
                                                 colSpan={2}
-                                                style={{ zIndex: timelineTimes.length - timelineTimeIndex }}
+                                                style={{ zIndex: (timelineTimes.length - timelineTimeIndex) * 100 }}
                                             >
-                                                <div className={styles.helperHeader} />
+                                                <div className={styles.helperHead} />
                                                 {timelineTime.breakPoint && (
                                                     <div>{FUNC.getTimeFormat(timelineTime.time)}</div>
                                                 )}
@@ -223,33 +295,56 @@ const Timeline = ({ initProps }) => {
                             </thead>
                             <tbody className={styles.tbody}>
                                 {data.map((dataItem) => (
-                                    <tr key={dataItem.id} className={styles.tr}>
-                                        {tableColumns.map((column, columnIndex) => (
-                                            <FrozenCell
-                                                key={`body-${column.param}`}
-                                                isLastCell={columnIndex === initialData.length}
+                                    <React.Fragment key={dataItem.id}>
+                                        <tr className={getTrStyles(dataItem)}>
+                                            {tableColumns.map((column, columnIndex) => (
+                                                <FrozenCell
+                                                    key={`body-${column.param}`}
+                                                    rowSpan={dataItem.groupedTimelines?.length}
+                                                    {...frozenCellProps(columnIndex)}
+                                                >
+                                                    <div className={styles.frozenContent}>
+                                                        {FUNC.getDeepValue(dataItem, column.param)}
+                                                    </div>
+                                                </FrozenCell>
+                                            ))}
+                                            {timelineTimes.map((timelineTime) => (
+                                                <TimelineCell
+                                                    key={timelineTime.id}
+                                                    timelineTime={timelineTime}
+                                                    dataItem={{
+                                                        ...dataItem,
+                                                        timeline: dataItem.groupedTimelines[0],
+                                                        workCellIndexes: dataItem.workCellIndexes[0],
+                                                    }}
+                                                    rowId={dataItem.groupedTimelines[0][0].rowId}
+                                                    isLastGroup={dataItem.groupedTimelines.length === 1}
+                                                />
+                                            ))}
+                                        </tr>
+                                        {dataItem.groupedTimelines.slice(1).map((timelineItem, timelineItemIndex) => (
+                                            <tr
+                                                key={`${dataItem.id}-sub-${timelineItemIndex + 1}`}
+                                                className={getTrStyles(dataItem)}
                                             >
-                                                {columnIndex === 0 &&
-                                                    dataItem.workCount.original !== dataItem.workCount.erased && (
-                                                        <>
-                                                            <span style={{ color: "red" }}>
-                                                                [Скрыто:{" "}
-                                                                {dataItem.workCount.original - dataItem.workCount.erased}]
-                                                            </span>
-                                                            <br />
-                                                        </>
-                                                    )}
-                                                {FUNC.getDeepValue(dataItem, column.param)}
-                                            </FrozenCell>
+                                                {timelineTimes.map((timelineTime) => (
+                                                    <TimelineCell
+                                                        key={timelineTime.id}
+                                                        timelineTime={timelineTime}
+                                                        dataItem={{
+                                                            ...dataItem,
+                                                            timeline: timelineItem,
+                                                            workCellIndexes: dataItem.workCellIndexes[timelineItemIndex + 1],
+                                                        }}
+                                                        rowId={timelineItem[0].rowId}
+                                                        isLastGroup={
+                                                            dataItem.groupedTimelines.length - 2 - timelineItemIndex === 0
+                                                        }
+                                                    />
+                                                ))}
+                                            </tr>
                                         ))}
-                                        {timelineTimes.map((timelineTime) => (
-                                            <TimelineCell
-                                                key={timelineTime.id}
-                                                timelineTime={timelineTime}
-                                                dataItem={dataItem}
-                                            />
-                                        ))}
-                                    </tr>
+                                    </React.Fragment>
                                 ))}
                                 <tr className={styles.helperRow}>
                                     {tableColumns.map((column) => (

@@ -1,206 +1,96 @@
-$borderTable: 1px solid rgba(0, 0, 0, 0.1);
-$paddingSize: 12px;
+$borderTableColor: #e6e6e6;
+$borderBreakPointColor: #bbbbbb;
+$borderTable: 1px solid $borderTableColor;
 
-$numberOfFrozenCols: 3;
-$frozenContentWidth: 110px;
-$frozenCellOffset: $frozenContentWidth + 2 * $paddingSize;
-$timeCellWidth: 30px + 2 * $paddingSize;
+$paddingHead: 12px;
+$paddingBody: 8px 12px;
 
-@mixin table-cell {
-    position: relative;
-    z-index: 1;
-    padding: $paddingSize;
-    text-align: left;
-    border-bottom: $borderTable;
+$fontSize: 1.2rem;
+$lineHeight: 1.6rem;
+
+$tableBackground: #fff;
+$textColor: #242424;
+
+$timelineSelectionColor: #5ec5ad;
+$timelineErrorColor: #ff5959;
+
+$fontFamily: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans",
+    "Helvetica Neue", sans-serif;
+
+@mixin frozenCell {
+    z-index: 100000;
+    border-right: $borderTable;
+    transition: box-shadow 0.2s;
 }
-
-@mixin frozen-cell {
-    position: sticky;
-    z-index: 10;
-    @for $i from 1 through $numberOfFrozenCols {
-        &:nth-child(#{$i}) {
-            left: ($i - 1) * $frozenCellOffset;
-        }
-    }
-    .fixedContent {
-        width: $frozenContentWidth;
-    }
-    &.lastCell {
-        border-right: $borderTable;
-    }
-}
-
-$headingBackground: #fff;
-$headingText: #333333;
 
 .container {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
     overflow-x: auto;
     border: $borderTable;
 
     * {
-        padding: 0;
-        margin: 0;
-        border: 0;
-        font-family: Arial, sans-serif;
-    }
-    *,
-    *:before,
-    *:after {
-        -moz-box-sizing: border-box;
-        -webkit-box-sizing: border-box;
         box-sizing: border-box;
-    }
-    :focus,
-    :active {
-        outline: none;
-    }
-    a:focus,
-    a:active {
-        outline: none;
-    }
-
-    nav,
-    footer,
-    header,
-    aside {
-        display: block;
-    }
-
-    html,
-    body {
-        height: 100%;
-        width: 100%;
-        font-size: 100%;
-        line-height: 1;
-        font-size: 14px;
-        -ms-text-size-adjust: 100%;
-        -moz-text-size-adjust: 100%;
-        -webkit-text-size-adjust: 100%;
-    }
-    input,
-    button,
-    textarea {
-        font-family: inherit;
-    }
-
-    input::-ms-clear {
-        display: none;
-    }
-    button {
-        cursor: pointer;
-    }
-    button::-moz-focus-inner {
-        padding: 0;
-        border: 0;
-    }
-    a,
-    a:visited {
-        text-decoration: none;
-    }
-    a:hover {
-        text-decoration: none;
-    }
-    ul li {
-        list-style: none;
-    }
-    img {
-        vertical-align: top;
-    }
-
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        font-size: inherit;
-        font-weight: 400;
     }
 
     .table {
-        width: 100%;
-        border-collapse: collapse;
+        // border-collapse: collapse;
+        border-spacing: 0;
+        color: $textColor;
+        background-color: $tableBackground;
+        font-family: $fontFamily;
 
-        .thead {
-            background-color: $headingBackground;
-            font-weight: bold;
-            position: relative;
-            z-index: 10;
-            .tr .th {
-                @include table-cell();
-                background-color: $headingBackground;
-                color: $headingText;
-                & > .timelineTitle {
-                    width: max-content;
-                    position: sticky;
-                    z-index: 10;
-                    left: $numberOfFrozenCols * $frozenCellOffset + $paddingSize + $numberOfFrozenCols;
+        .thead .tr .th {
+            padding: $paddingHead;
+            font-size: $fontSize;
+            font-weight: 700;
+            line-height: $lineHeight;
+            border-bottom: $borderTable;
+            background-color: $tableBackground;
+            & > .timelineTitle {
+                width: max-content;
+                position: sticky;
+                z-index: 10;
+            }
+            &.frozen {
+                @include frozenCell;
+            }
+            &.time {
+                position: relative;
+                padding-left: 0;
+                padding-right: 0;
+                &::before {
+                    content: "";
+                    position: absolute;
+                    bottom: 0;
+                    left: 50%;
+                    width: 0px;
+                    transform: translateX(-50%);
+                    border-left: 1px solid $borderBreakPointColor;
                 }
-                &.frozen {
-                    @include frozen-cell();
-                    z-index: 100000;
+                &:not(.breakPoint)::before {
+                    height: 5px;
                 }
-                &:not(.frozen) {
-                    padding-left: 0;
-                    padding-right: 0;
+                &.breakPoint::before {
+                    height: 8px;
                 }
-                &.time {
-                    position: relative;
-                    &::before {
-                        content: "";
-                        position: absolute;
-                        bottom: 0;
-                        left: 50%;
-                        width: 0px;
-                        height: 8px;
-                        transform: translateX(-50%);
-                        border-left: $borderTable;
-                        border-left-width: 2px;
-                    }
-                    & > div {
-                        text-align: center;
-                        margin: 0 auto;
-                        color: #a7a7a7;
-                        font-size: 14px;
-                        writing-mode: vertical-rl;
-                        text-orientation: mixed;
-                        transform: rotate(-180deg);
-                    }
-                    .helperHeader {
-                        width: 18px;
-                        height: 5px;
-                    }
-                    & .vertLine {
-                        position: absolute;
-                        z-index: 10;
-                        top: 100%;
-                        left: 50%;
-                        width: 0px;
-                        transform: translateX(-50%);
-                        border-left: $borderTable;
-                        pointer-events: none;
-                    }
+                & > div:not(.helperHead) {
+                    color: $borderBreakPointColor;
+                    writing-mode: vertical-rl;
+                    text-orientation: mixed;
+                    transform: rotate(-180deg);
+                }
+                .helperHead {
+                    visibility: hidden;
+                    width: 18px;
+                    height: 0;
+                }
 
-                    $timeColor: #5ec5ad;
-                    &.hover {
-                        color: $timeColor;
-                    }
-                    &.rangePoints {
-                        color: $timeColor;
-                        &.error {
-                            color: #ff5959;
-                        }
-                    }
-                    &:not(.breakPoint) {
-                        // padding: 0;
-                    }
-                    &.breakPoint {
-                        width: max-content;
+                &.hover {
+                    color: $timelineSelectionColor;
+                }
+                &.rangePoints {
+                    color: $timelineSelectionColor;
+                    &.error {
+                        color: $timelineErrorColor;
                     }
                 }
             }
@@ -209,19 +99,25 @@ $headingText: #333333;
         .tbody {
             .tr {
                 .td {
-                    @include table-cell();
+                    padding: $paddingBody;
+                    font-size: $fontSize;
+                    line-height: $lineHeight;
                     &.frozen {
-                        @include frozen-cell();
-                        z-index: 100000;
-                        // opacity: 0.5;
+                        @include frozenCell;
+                        .frozenContent {
+                            width: max-content;
+                            max-width: 250px;
+                        }
+                    }
+                    &:not(.timeCell) {
+                        border-bottom: $borderTable;
                     }
                     &.timeCell {
-                        overflow: hidden;
-                        padding: 0 3px;
+                        padding: 0;
                         position: relative;
-                        border-right: $borderTable;
-                        border-right-width: 1px;
+                        border-right: 1px solid $borderTableColor;
                         border-right-style: dashed;
+
                         $arrowSize: 4px;
                         $arrowShift: 20px;
                         $arrowColor: #6aa1eb;
@@ -257,70 +153,76 @@ $headingText: #333333;
                             opacity: 0.5;
                             transform: translate(0, -50%);
                         }
+                        &.lastTimeline {
+                            border-bottom: $borderTable;
+                        }
+                        &.breakPoint {
+                            border-right-color: $borderBreakPointColor;
+                        }
                         &.borderless {
-                            border-right: unset;
+                            border-right-color: transparent;
                         }
                         &.creating {
-                            $creatingColor: #97dece;
-                            $overlappingColor: #ff5959;
-
-                            background-color: $creatingColor !important;
+                            background-color: $timelineSelectionColor !important;
                             &.hideBorder {
-                                border-right-color: $creatingColor !important;
+                                border-right-color: $timelineSelectionColor !important;
                             }
                             &.overlapping {
-                                background-color: $overlappingColor !important;
+                                background-color: $timelineErrorColor !important;
                                 &.hideBorder {
-                                    border-right-color: $overlappingColor !important;
+                                    border-right-color: $timelineErrorColor !important;
                                 }
                             }
                         }
                         &:not(.notClickable) {
                             cursor: pointer;
                         }
-                        .createdTime {
-                            $borderRadius: 8px;
-                            $vPadding: 6px;
-                            $hPadding: 2px;
+                        .tooltipContainer {
+                            width: 100%;
+                            height: 100%;
+                            .createdTime {
+                                $borderRadius: 8px;
+                                $vPadding: 6px;
+                                $hPadding: 2px;
 
-                            color: #333333;
-                            z-index: 50;
-                            cursor: pointer;
-                            position: absolute;
-                            top: $vPadding;
-                            bottom: $vPadding;
-                            left: $hPadding;
-                            right: $hPadding;
-                            border-radius: $borderRadius;
-                            overflow: hidden;
-                            .workContainer {
-                                width: 100%;
-                                height: 100%;
-                                display: flex;
-                                justify-content: flex-start;
-                                align-items: center;
-                                .workName {
-                                    width: 100%;
-                                    padding: 8px;
-                                    font-size: 14px;
-                                    font-weight: 600;
-                                    white-space: nowrap;
-                                    overflow: hidden;
-                                    text-overflow: ellipsis;
+                                cursor: pointer;
+                                color: $textColor;
+                                text-decoration: none;
+                                position: absolute;
+                                top: $vPadding;
+                                bottom: $vPadding;
+                                left: $hPadding;
+                                right: $hPadding;
+                                border-radius: $borderRadius;
+                                overflow: hidden;
+                                .workContainer {
+                                    height: 100%;
+                                    display: flex;
+                                    justify-content: flex-start;
+                                    align-items: center;
+                                    .workName {
+                                        padding: 6px 8px;
+                                        font-size: $fontSize;
+                                        line-height: $lineHeight;
+                                        font-weight: 500;
+                                        white-space: nowrap;
+                                        overflow: hidden;
+                                        text-overflow: ellipsis;
+                                    }
                                 }
                             }
                         }
-                        .helperContent {
-                            width: 3px;
-                            height: 5px;
+                        .helperBody {
+                            visibility: hidden;
+                            width: 0;
+                            min-height: 40px;
                         }
                     }
                 }
-                color: #333333;
-                &:nth-child(odd) .td {
+                &:not(.even) .td {
                     background-color: #f5f6f8;
                 }
-                &:nth-child(even) .td {
+                &.even .td {
                     background-color: #ffffff;
                 }
                 &:last-child .td {
@@ -329,6 +231,11 @@ $headingText: #333333;
             }
             .helperRow {
                 visibility: hidden;
+                & > td {
+                    padding: 0;
+                    margin: 0;
+                    border: 0;
+                }
             }
         }
     }
@@ -340,31 +247,31 @@ $headingText: #333333;
         align-items: center;
         flex-direction: column;
         gap: 12px;
+        font-family: $fontFamily;
         background-color: #f8d7da;
         color: #721c24;
         padding: 24px 10px;
-        font-size: 16px;
-        border: 1px solid #f5c6cb;
-        border-radius: 4px;
-        margin-bottom: 10px;
+        font-size: 1.8rem;
         strong {
-            font-size: 22px;
-            font-weight: bold;
+            font-size: 2rem;
+            font-weight: 700;
         }
     }
 }
 .tooltip {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 4px;
+    flex-direction: column;
     max-width: 300px;
     position: absolute;
     padding: 6px 8px;
     border: 1px solid #eee;
     background-color: white;
     border-radius: 4px;
-    font-size: 14px;
+    font-size: $fontSize;
+    line-height: $lineHeight;
+    font-family: $fontFamily;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    display: flex;
-    justify-content: flex-start;
-    align-items: flex-start;
-    gap: 4px;
-    flex-direction: column;
 }

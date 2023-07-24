@@ -40,25 +40,28 @@ const deployTimeline = (initProps = {}) => {
     if (!initProps.containerId || !initProps.columns || !initProps.startTime || !initProps.finishTime) return;
 
     const container = document.getElementById(initProps.containerId);
-    const timeStep = initProps.timeStep || 10;
+    const displayStep = initProps.displayStep || 10;
+    const createStep = initProps.createStep || 60;
+    const totalDuration = TIME(initProps.finishTime) - TIME(initProps.startTime);
 
-    if (!container || 60 % timeStep !== 0) return;
+    if (!container || totalDuration % displayStep !== 0 || totalDuration % createStep !== 0 || displayStep > createStep)
+        return;
 
     // Constants
     const milliseconds = 60 * 1000;
 
-    const TIME_STEP_DISPLAY = timeStep * milliseconds;
+    const TIME_STEP_DISPLAY = displayStep * milliseconds;
 
     const CONST = {
         TIME_STEP_DISPLAY,
-        TIME_STEP_CREATE: 60 * milliseconds,
+        TIME_STEP_CREATE: createStep * milliseconds,
     };
 
     // Functions
-    const TIME = (datetime) => {
+    function TIME(datetime) {
         if (!datetime) return new Date().getTime();
         return new Date(datetime).getTime();
-    };
+    }
 
     const EQUAL = (time1, time2) => {
         return TIME(time1) === TIME(time2);
@@ -144,26 +147,6 @@ const deployTimeline = (initProps = {}) => {
         return { startTime: roundedStartTime, finishTime: roundedFinishTime };
     };
 
-    const eraseOverlapWorks = (works) => {
-        if (works.length <= 1) {
-            return works;
-        }
-
-        works.sort((a, b) => TIME(a.finishTime) - TIME(b.finishTime));
-
-        let end = TIME(works[0].finishTime);
-        const result = [works[0]];
-
-        for (let i = 1; i < works.length; i++) {
-            if (TIME(works[i].startTime) >= end) {
-                end = TIME(works[i].finishTime);
-                result.push(works[i]);
-            }
-        }
-
-        return result;
-    };
-
     const checkByExtending = (timelineTime, hiddenRange, reversedDirection = false) => {
         const rightCheck = hiddenRange.some((hiddenRangeItem) =>
             BETWEEN(timelineTime.time, hiddenRangeItem, TIME(timelineTime.time) + CONST.TIME_STEP_CREATE)
@@ -177,68 +160,119 @@ const deployTimeline = (initProps = {}) => {
         return timelineTime.type === FINISH_ID ? computedForward : computedBackward;
     };
 
-    const computeAllWorkSize = (data, timelineTimes) => {
-        return data.map((dataItem) => {
-            const erasedTimeline = eraseOverlapWorks(dataItem.timeline);
-            const computedDataTimeline = erasedTimeline.map((work, workIndex) => {
-                const { startTime: computedStartTime, finishTime: computedFinishTime } = roundTime(work);
-                return {
-                    ...work,
-                    id: `${dataItem.id}-${workIndex + 1}`,
-                    startTime: computedStartTime,
-                    finishTime: computedFinishTime,
-                    originalStartTime: work.originalStartTime || work.startTime,
-                    originalFinishTime: work.originalFinishTime || work.finishTime,
-                    colSpan: calculateColSpan(computedStartTime, computedFinishTime),
-                    hiddenRange: [computedStartTime, computedFinishTime],
-                };
-            });
-            const allHiddenRages = computedDataTimeline.map((work) => work.hiddenRange);
+    const getGroupedTimeline = (workTimeline) => {
+        const result = [[]];
+        workTimeline = workTimeline.sort(
+            (timelineA, timelineB) =>
+                TIME(timelineB.finishTime) -
+                TIME(timelineB.startTime) -
+                (TIME(timelineA.finishTime) - TIME(timelineA.startTime))
+        );
+
+        let currentRangeIndex = 0;
+        while (result.map((row) => row.length).reduce((sum, rowLength) => sum + rowLength, 0) !== workTimeline.length) {
+            const currentWork = workTimeline[currentRangeIndex];
+
+            let added = false;
+            for (let i = 0; i < result.length; i++) {
+                if (
+                    !result[i].some(
+                        (savedWork) =>
+                            !(
+                                TIME(savedWork.finishTime) <= TIME(currentWork.startTime) ||
+                                TIME(currentWork.finishTime) <= TIME(savedWork.startTime)
+                            )
+                    )
+                ) {
+                    result[i].push(currentWork);
+                    added = true;
+                    break;
+                }
+            }
+            if (!added) {
+                result.push([currentWork]);
+            }
+            currentRangeIndex++;
+        }
+
+        return result;
+    };
+
+    const formulateWorkTimeline = (data, timelineTimes) => {
+        return data.map((dataItem, dataItemIndex) => {
+            const computedTimelines = getGroupedTimeline(dataItem.timeline);
+
+            const computedDataTimelines = computedTimelines.map((timeline, timelineIndex) =>
+                timeline.map((work, workIndex) => {
+                    const { startTime: computedStartTime, finishTime: computedFinishTime } = roundTime(work);
+                    return {
+                        ...work,
+                        id: `${dataItem.id}-${timelineIndex + 1}-${workIndex + 1}`,
+                        rowId: `${dataItem.id}-${timelineIndex + 1}`,
+                        startTime: computedStartTime,
+                        finishTime: computedFinishTime,
+                        originalStartTime: work.originalStartTime || work.startTime,
+                        originalFinishTime: work.originalFinishTime || work.finishTime,
+                        colSpan: calculateColSpan(computedStartTime, computedFinishTime),
+                        hiddenRange: [computedStartTime, computedFinishTime],
+                        isEndsWithBreakPoint: new Date(computedFinishTime).getMinutes() === 0,
+                    };
+                })
+            );
+            const hiddenTimelines = computedDataTimelines.map((computedDataTimeline) =>
+                computedDataTimeline.map((work) => work.hiddenRange)
+            );
 
             return {
                 ...dataItem,
-                timeline: computedDataTimeline,
-                workCount: {
-                    original: dataItem.workCount?.original + 1 || dataItem.timeline.length,
-                    erased: dataItem.workCount?.erased + 1 || erasedTimeline.length,
-                },
-                allHiddenRages,
-                workCellIndexes: timelineTimes
-                    .filter(
-                        (timelineTime) =>
-                            allHiddenRages.some(
-                                (hiddenRange) =>
-                                    BETWEEN(hiddenRange[0], timelineTime.time, hiddenRange[1], true, true) ||
-                                    checkByExtending(timelineTime, hiddenRange, true)
-                            ) ||
-                            (!timelineTime.isNotCornerCell &&
-                                allHiddenRages.some((hiddenRange) => checkByExtending(timelineTime, hiddenRange)))
-                    )
-                    .map((timelineTime) => ({
-                        displayable: !allHiddenRages.some((hiddenRange) =>
-                            BETWEEN(hiddenRange[0], timelineTime.time, hiddenRange[1], false, timelineTime.type !== START_ID)
-                        ),
-                        enabled:
-                            !allHiddenRages.some((hiddenRange) =>
-                                EQUAL(hiddenRange[timelineTime.type === FINISH_ID ? 1 : 0], timelineTime.time)
-                            ) &&
-                            (timelineTime.isNotCornerCell ||
-                                !computedDataTimeline.some((computedDataTimelineItem) =>
-                                    EQUAL(
-                                        timelineTime.isFirstCell
-                                            ? computedDataTimelineItem.startTime
-                                            : computedDataTimelineItem.finishTime,
-                                        timelineTime.time
-                                    )
-                                )) &&
-                            !allHiddenRages.some((hiddenRange) =>
-                                timelineTime.isNotCornerCell
-                                    ? checkByExtending(timelineTime, hiddenRange, true)
-                                    : checkByExtending(timelineTime, hiddenRange)
+                groupedTimelines: computedDataTimelines,
+                isEvenRow: dataItemIndex % 2 === 1,
+                hiddenTimelines,
+                workCellIndexes: computedDataTimelines.map((_, computedDataTimelineIndex) => {
+                    const currentHiddenTimeline = hiddenTimelines[computedDataTimelineIndex];
+                    return timelineTimes
+                        .filter(
+                            (timelineTime) =>
+                                currentHiddenTimeline.some(
+                                    (hiddenRange) =>
+                                        BETWEEN(hiddenRange[0], timelineTime.time, hiddenRange[1], true, true) ||
+                                        checkByExtending(timelineTime, hiddenRange, true)
+                                ) ||
+                                (!timelineTime.isNotCornerCell &&
+                                    currentHiddenTimeline.some((hiddenRange) => checkByExtending(timelineTime, hiddenRange)))
+                        )
+                        .map((timelineTime) => ({
+                            displayable: !currentHiddenTimeline.some((hiddenRange) =>
+                                BETWEEN(
+                                    hiddenRange[0],
+                                    timelineTime.time,
+                                    hiddenRange[1],
+                                    false,
+                                    timelineTime.type !== START_ID
+                                )
                             ),
-                        id: timelineTime.id,
-                        type: timelineTime.type,
-                    })),
+                            enabled:
+                                !currentHiddenTimeline.some((hiddenRange) =>
+                                    EQUAL(hiddenRange[timelineTime.type === FINISH_ID ? 1 : 0], timelineTime.time)
+                                ) &&
+                                (timelineTime.isNotCornerCell ||
+                                    !computedDataTimelines.some((computedDataTimelineItem) =>
+                                        EQUAL(
+                                            timelineTime.isFirstCell
+                                                ? computedDataTimelineItem.startTime
+                                                : computedDataTimelineItem.finishTime,
+                                            timelineTime.time
+                                        )
+                                    )) &&
+                                !currentHiddenTimeline.some((hiddenRange) =>
+                                    timelineTime.isNotCornerCell
+                                        ? checkByExtending(timelineTime, hiddenRange, true)
+                                        : checkByExtending(timelineTime, hiddenRange)
+                                ),
+                            id: timelineTime.id,
+                            type: timelineTime.type,
+                        }));
+                }),
             };
         });
     };
@@ -332,7 +366,7 @@ const deployTimeline = (initProps = {}) => {
         getDateTime,
         createTimelineTimes,
         calculateColSpan,
-        computeAllWorkSize,
+        formulateWorkTimeline,
         getDeepValue,
         getTimeRange,
         getTimeCount,
@@ -347,9 +381,10 @@ deployTimeline({
     containerId: "root",
     startTime: new Date().setHours(7, 0, 0, 0),
     finishTime: new Date().setHours(19, 0, 0, 0),
-    creatable: true,
+    creatable: false,
     byBreakPoint: false,
-    timeStep: 10,
+    displayStep: 10,
+    createStep: 60,
     columns: [
         {
             title: "Транспорт",
@@ -376,8 +411,8 @@ deployTimeline({
                 createWork("Перевезти грунт на склад", "09:00", "12:00"),
                 createWork("Обслуживание", "09:00", "10:00"),
                 createWork("Подготовить к работе", "11:00", "18:00"),
-                createWork("Ремонт", "12:00", "18:00"),
-                createWork("Завершить выемку траншеи", "11:00", "18:00"),
+                createWork("Ремонт", "12:00", "19:00"),
+                createWork("Завершить выемку траншеи", "11:00", "18:30"),
             ],
         },
         {
@@ -388,112 +423,7 @@ deployTimeline({
             transportCode: "100500",
             timeline: [
                 createWork("Проверить систему гидравлики", "8:03", "8:08"),
-                createWork("Управление движением грузовиков на территории", "9:00", "18:00"),
-                createWork("Заправить топливом самосвалы", "08:30", "09:30"),
-            ],
-        },
-        {
-            transport: {
-                transportName: "КАМАЗ 53215 № 2215",
-            },
-            inventaryNumber: "7036320",
-            transportCode: "100500",
-            timeline: [
-                createWork("Поднять и установить новый ковш", "8:03", "8:16"),
-                createWork("Перевезти материалы на строительную площадку", "11:00", "12:20"),
-                createWork("Перевезти материалы на строительную площадку 2", "14:00", "18:10"),
-            ],
-        },
-        {
-            transport: {
-                transportName: "КАМАЗ 53215 № 2215",
-            },
-            inventaryNumber: "7036320",
-            transportCode: "100500",
-            timeline: [
-                createWork("Подготовить экскаватор к утреннему сеансу работы", "8:03", "8:21"),
-                createWork("Загрузить самосвалы грунтом", "10:00", "11:30"),
-                createWork("Загрузить самосвалы грунтом 2", "15:00", "19:00"),
-            ],
-        },
-        {
-            transport: {
-                transportName: "КАМАЗ 53215 № 2215",
-            },
-            inventaryNumber: "7036320",
-            transportCode: "100500",
-            timeline: [
-                createWork("Заправить топливом экскаваторы и самосвалы", "7:33", "8:02"),
-                createWork("Передвинуть самосвалы на площадку для погрузки", "11:00", "12:00"),
-            ],
-        },
-        {
-            transport: {
-                transportName: "КАМАЗ 53215 № 2215",
-            },
-            inventaryNumber: "6854998",
-            transportCode: "155044",
-            timeline: [
-                createWork("Удалить и утилизировать отходы с площадки", "7:00", "7:15"),
-                createWork("Разгрузить самосвалы на складе", "8:15", "9:15"),
-                createWork("Переместить экскаватор на новую строительную площадку", "9:30", "11:15"),
-            ],
-        },
-    ].map((item, index) => ({
-        ...item,
-        id: index,
-        timeline: item.timeline.map((timelineItem) => ({
-            ...timelineItem,
-            modalUrl: `/some-js-url?withParams=${timelineItem.workName}&index=${index}`,
-        })),
-    })),
-});
-deployTimeline({
-    containerId: "root2",
-    startTime: new Date().setHours(7, 0, 0, 0),
-    finishTime: new Date().setHours(19, 0, 0, 0),
-    creatable: true,
-    byBreakPoint: true,
-    timeStep: 10,
-    columns: [
-        {
-            title: "Транспорт",
-            param: "transport.transportName",
-        },
-        {
-            title: "Инвентарный номер",
-            param: "inventaryNumber",
-        },
-        {
-            title: "Код транспорта",
-            param: "transportCode",
-        },
-    ],
-    data: [
-        {
-            transport: {
-                transportName: "КАМАЗ 53215 № 2215",
-            },
-            inventaryNumber: "7036320",
-            transportCode: "100500",
-            timeline: [
-                createWork("Выполнить земляные работы", "8:03", "8:06"),
-                createWork("Перевезти грунт на склад", "09:00", "12:00"),
-                createWork("Обслуживание", "09:00", "10:00"),
-                createWork("Подготовить к работе", "11:00", "18:00"),
-                createWork("Ремонт", "12:00", "18:00"),
-                createWork("Завершить выемку траншеи", "11:00", "18:00"),
-            ],
-        },
-        {
-            transport: {
-                transportName: "КАМАЗ 53215 № 2215",
-            },
-            inventaryNumber: "7036320",
-            transportCode: "100500",
-            timeline: [
-                createWork("Проверить систему гидравлики", "8:03", "8:08"),
-                createWork("Управление движением грузовиков на территории", "9:00", "18:00"),
+                createWork("Управление движением грузовиков на территории", "9:00", "16:00"),
                 createWork("Заправить топливом самосвалы", "08:30", "09:30"),
             ],
         },

@@ -5,7 +5,6 @@ import PropsContext from "../context/PropsContext";
 
 const CreatedTime = ({ work }) => {
     const { FUNC } = useContext(PropsContext);
-    const computedClassNames = [styles.createdTime];
     const [showContent, setShowContent] = useState(true);
     const [isComputed, setComputed] = useState(false);
 
@@ -37,7 +36,7 @@ const CreatedTime = ({ work }) => {
         <Tooltip work={work}>
             <a
                 href={work.modalUrl}
-                className={computedClassNames.join(" ")}
+                className={styles.createdTime}
                 style={{
                     backgroundColor: FUNC.darkenColor(work.color.background, isHover ? 20 : 0),
                 }}
