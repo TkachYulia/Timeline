@@ -5,7 +5,7 @@ import WorkCreateContext from "../context/WorkCreateContext";
 import { FINISH_ID, START_ID } from "../exports/constants";
 import PropsContext from "../context/PropsContext";
 
-const TimelineCell = ({ timelineTime, dataItem, rowId, isLastGroup }) => {
+const TimelineCell = ({ timelineTime, dataItem, stickyStyles, rowId, isLastGroup }) => {
     const { timelineStartTime, timelineFinishTime, byBreakPoint, CONST, FUNC } = useContext(PropsContext);
     const workCreateContext = useContext(WorkCreateContext);
 
@@ -48,7 +48,6 @@ const TimelineCell = ({ timelineTime, dataItem, rowId, isLastGroup }) => {
         isCreating,
         isOverlapping,
         isRightDimension,
-        setCreatingDataRowId,
         setCreatingHoverTime,
         setHoverDataId,
         setHoverDataRowId,
@@ -234,8 +233,8 @@ const TimelineCell = ({ timelineTime, dataItem, rowId, isLastGroup }) => {
             onMouseLeave={handleMouseLeave}
             style={showEnableZones ? { backgroundColor: enabledToCreateWork ? "#81CE85" : "#CE8181" } : {}}
         >
-            <div className={styles.helperBody} />
-            {hasWork && <CreatedTime work={matchingTimelineWork} />}
+            {/* <div className={styles.helperBody} /> */}
+            {hasWork && <CreatedTime work={matchingTimelineWork} stickyStyles={stickyStyles} />}
         </td>
     );
 };

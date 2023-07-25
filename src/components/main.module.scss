@@ -32,7 +32,6 @@ $fontFamily: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubun
     }
 
     .table {
-        // border-collapse: collapse;
         border-spacing: 0;
         color: $textColor;
         background-color: $tableBackground;
@@ -104,10 +103,9 @@ $fontFamily: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubun
                     line-height: $lineHeight;
                     &.frozen {
                         @include frozenCell;
-                        .frozenContent {
-                            width: max-content;
-                            max-width: 250px;
-                        }
+                    }
+                    &:not(.frozen) {
+                        max-width: 18px;
                     }
                     &:not(.timeCell) {
                         border-bottom: $borderTable;
@@ -178,30 +176,28 @@ $fontFamily: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubun
                             cursor: pointer;
                         }
                         .tooltipContainer {
-                            width: 100%;
-                            height: 100%;
                             .createdTime {
                                 $borderRadius: 8px;
                                 $vPadding: 6px;
                                 $hPadding: 2px;
 
+                                margin: $vPadding $hPadding;
+                                border-radius: $borderRadius;
+                                padding: 6px 0;
+
+                                display: flex;
+                                justify-content: flex-start;
+                                align-items: center;
+                                min-height: 28px;
                                 cursor: pointer;
                                 color: $textColor;
                                 text-decoration: none;
-                                position: absolute;
-                                top: $vPadding;
-                                bottom: $vPadding;
-                                left: $hPadding;
-                                right: $hPadding;
-                                border-radius: $borderRadius;
-                                overflow: hidden;
                                 .workContainer {
+                                    width: max-content;
                                     height: 100%;
-                                    display: flex;
-                                    justify-content: flex-start;
-                                    align-items: center;
                                     .workName {
-                                        padding: 6px 8px;
+                                        width: 100%;
+                                        height: 100%;
                                         font-size: $fontSize;
                                         line-height: $lineHeight;
                                         font-weight: 500;

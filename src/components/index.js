@@ -4,8 +4,13 @@ import FrozenCell from "./FrozenCell";
 import TimelineCell from "./TimelineCell";
 import WorkCreateContext from "../context/WorkCreateContext";
 import PropsContext from "../context/PropsContext";
-import { TOOLTIP_PORTAL_ID, START_ID, FINISH_ID } from "../exports/constants";
+import { TOOLTIP_PORTAL_ID, START_ID } from "../exports/constants";
 import React, { useRef } from "react";
+
+const defaultFrozenColumns = {
+    updated: false,
+    width: 100,
+};
 
 const Timeline = ({ initProps }) => {
     const {
@@ -24,7 +29,7 @@ const Timeline = ({ initProps }) => {
     const [timelineTimes, setTimelineTimes] = useState(FUNC.createTimelineTimes(timelineStartTime, timelineFinishTime));
     const [data, setData] = useState(FUNC.formulateWorkTimeline(initialData, timelineTimes));
 
-    const [frozenColumnsWidth, setFrozenColumnsWidth] = useState(tableColumns.map((_) => ({ updated: false, width: 100 })));
+    const [frozenColumnsWidth, setFrozenColumnsWidth] = useState(tableColumns.map((_) => defaultFrozenColumns));
 
     const [isCreating, setCreating] = useState(false);
     const [creatingDataId, setCreatingDataId] = useState(null);
@@ -46,13 +51,14 @@ const Timeline = ({ initProps }) => {
     const [isContainerScrolled, setContainerScrolled] = useState(false);
 
     const [timelineTitleHeight, setTimelineTitleHeight] = useState(0);
+    const [stickyStyles, setStickyStyles] = useState({});
 
     useEffect(() => {
         setTimelineTimes(FUNC.createTimelineTimes(timelineStartTime, timelineFinishTime));
     }, [timelineStartTime, timelineFinishTime]);
 
     useEffect(() => {
-        setFrozenColumnsWidth(() => tableColumns.map((_) => ({ updated: false, width: 100 })));
+        setFrozenColumnsWidth(() => tableColumns.map((_) => defaultFrozenColumns));
     }, [tableColumns]);
 
     useEffect(() => {
@@ -63,7 +69,15 @@ const Timeline = ({ initProps }) => {
 
     const updateColumnWidth = (columnIndex, newWidth) => {
         setFrozenColumnsWidth((prevWidths) =>
-            prevWidths.map((prevWidth, index) => (columnIndex === index ? { updated: true, width: newWidth } : prevWidth))
+            prevWidths.map((prevWidth, index) =>
+                columnIndex === index
+                    ? {
+                          ...prevWidth,
+                          updated: true,
+                          width: newWidth,
+                      }
+                    : prevWidth
+            )
         );
     };
 
@@ -231,13 +245,14 @@ const Timeline = ({ initProps }) => {
         return result.join(" ");
     };
 
-    let freezeStyles = {};
-    if (frozenColumnsWidth.every((frozenColumnWidth) => frozenColumnWidth.updated)) {
-        freezeStyles = {
-            position: "sticky",
-            left: `${frozenColumnsWidth.reduce((sum, widthItem) => sum + widthItem.width + 1, 0) + 12}px`,
-        };
-    }
+    useEffect(() => {
+        if (frozenColumnsWidth.every((frozenColumnWidth) => frozenColumnWidth.updated)) {
+            setStickyStyles(() => ({
+                position: "sticky",
+                left: `${frozenColumnsWidth.reduce((sum, widthItem) => sum + widthItem.width + 1, 0) + 12}px`,
+            }));
+        }
+    }, [frozenColumnsWidth]);
 
     const frozenCellProps = (columnIndex) => ({
         columnIndex,
@@ -270,7 +285,7 @@ const Timeline = ({ initProps }) => {
                                         </FrozenCell>
                                     ))}
                                     <th colSpan={timelineTimes.length || 1} className={styles.th} ref={timelineTitleRef}>
-                                        <div className={styles.timelineTitle} style={freezeStyles}>
+                                        <div className={styles.timelineTitle} style={stickyStyles}>
                                             Шкала работ смены: {FUNC.getTimeRange(timelineStartTime, timelineFinishTime)}
                                         </div>
                                     </th>
@@ -303,15 +318,14 @@ const Timeline = ({ initProps }) => {
                                                     rowSpan={dataItem.groupedTimelines?.length}
                                                     {...frozenCellProps(columnIndex)}
                                                 >
-                                                    <div className={styles.frozenContent}>
-                                                        {FUNC.getDeepValue(dataItem, column.param)}
-                                                    </div>
+                                                    {FUNC.getDeepValue(dataItem, column.param)}
                                                 </FrozenCell>
                                             ))}
                                             {timelineTimes.map((timelineTime) => (
                                                 <TimelineCell
                                                     key={timelineTime.id}
                                                     timelineTime={timelineTime}
+                                                    stickyStyles={stickyStyles}
                                                     dataItem={{
                                                         ...dataItem,
                                                         timeline: dataItem.groupedTimelines[0],
@@ -331,6 +345,7 @@ const Timeline = ({ initProps }) => {
                                                     <TimelineCell
                                                         key={timelineTime.id}
                                                         timelineTime={timelineTime}
+                                                        stickyStyles={stickyStyles}
                                                         dataItem={{
                                                             ...dataItem,
                                                             timeline: timelineItem,

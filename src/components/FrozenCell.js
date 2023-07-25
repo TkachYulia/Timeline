@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./main.module.scss";
 
 const FrozenCell = ({
@@ -12,23 +12,30 @@ const FrozenCell = ({
     timelineTitleHeight,
     children,
 }) => {
+    const [freezeStyles, setFreezeStyles] = useState({});
     const cellRef = useRef(null);
 
     const computedClassNames = [styles[isHeading ? "th" : "td"], styles.frozen].join(" ");
 
     useEffect(() => {
-        if (cellRef.current && isHeading) {
+        if (cellRef.current) {
             updateColumnWidth(columnIndex, cellRef.current.clientWidth);
         }
     }, [cellRef.current]);
 
-    let freezeStyles = {};
-    if (frozenColumnsWidth.every((frozenColumnWidth) => frozenColumnWidth.updated) && !!frozenColumnsWidth[columnIndex]) {
-        freezeStyles = {
-            position: "sticky",
-            left: `${frozenColumnsWidth.slice(0, columnIndex).reduce((sum, widthItem) => sum + widthItem.width + 1, 0)}px`,
-        };
-    }
+    useEffect(() => {
+        if (
+            frozenColumnsWidth.every((frozenColumnWidth) => frozenColumnWidth.updated) &&
+            !!frozenColumnsWidth[columnIndex]
+        ) {
+            setFreezeStyles(() => ({
+                position: "sticky",
+                left: `${frozenColumnsWidth
+                    .slice(0, columnIndex)
+                    .reduce((sum, widthItem) => sum + widthItem.width + 1, 0)}px`,
+            }));
+        }
+    }, [frozenColumnsWidth]);
 
     let shadowStyles = {
         boxShadow: "0 0 20px rgba(0, 0, 0, 0.0)",
@@ -51,7 +58,7 @@ const FrozenCell = ({
             </th>
         );
     return (
-        <td className={computedClassNames} rowSpan={rowSpan} style={{ ...freezeStyles, ...shadowStyles }}>
+        <td className={computedClassNames} ref={cellRef} rowSpan={rowSpan} style={{ ...freezeStyles, ...shadowStyles }}>
             {children}
         </td>
     );
