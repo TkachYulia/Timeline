@@ -4,6 +4,7 @@ import FrozenCell from "./FrozenCell";
 import TimelineCell from "./TimelineCell";
 import WorkCreateContext from "../context/WorkCreateContext";
 import PropsContext from "../context/PropsContext";
+import TooltipContext from "../context/TooltipContext";
 import { TOOLTIP_PORTAL_ID, START_ID } from "../exports/constants";
 import React, { useRef } from "react";
 
@@ -52,6 +53,8 @@ const Timeline = ({ initProps }) => {
 
     const [timelineTitleHeight, setTimelineTitleHeight] = useState(0);
     const [stickyStyles, setStickyStyles] = useState({});
+
+    const [lastTooltipHoverWorkId, setLastTooltipHoverWorkId] = useState(null);
 
     useEffect(() => {
         setTimelineTimes(FUNC.createTimelineTimes(timelineStartTime, timelineFinishTime));
@@ -273,74 +276,64 @@ const Timeline = ({ initProps }) => {
                 FUNC,
             }}
         >
-            <WorkCreateContext.Provider value={workCreateContext}>
-                <div className={styles.container} ref={containerRef}>
-                    {isTimelineCorrect ? (
-                        <table className={styles.table} ref={tableRef}>
-                            <thead className={styles.thead}>
-                                <tr className={styles.tr}>
-                                    {tableColumns.map((column, columnIndex) => (
-                                        <FrozenCell isHeading key={`head-${column.param}`} {...frozenCellProps(columnIndex)}>
-                                            {column.title}
-                                        </FrozenCell>
-                                    ))}
-                                    <th colSpan={timelineTimes.length || 1} className={styles.th} ref={timelineTitleRef}>
-                                        <div className={styles.timelineTitle} style={stickyStyles}>
-                                            Шкала работ смены: {FUNC.getTimeRange(timelineStartTime, timelineFinishTime)}
-                                        </div>
-                                    </th>
-                                </tr>
-                                <tr className={styles.tr}>
-                                    {timelineTimes
-                                        .filter((timelineTime) => timelineTime.type === START_ID)
-                                        .map((timelineTime, timelineTimeIndex) => (
-                                            <th
-                                                key={timelineTime.id}
-                                                className={getHeadingTitleClasses(timelineTime)}
-                                                colSpan={2}
-                                                style={{ zIndex: (timelineTimes.length - timelineTimeIndex) * 100 }}
+            <TooltipContext.Provider
+                value={{
+                    lastTooltipHoverWorkId,
+                    setLastTooltipHoverWorkId,
+                }}
+            >
+                <WorkCreateContext.Provider value={workCreateContext}>
+                    <div className={styles.container} ref={containerRef}>
+                        {isTimelineCorrect ? (
+                            <table className={styles.table} ref={tableRef}>
+                                <thead className={styles.thead}>
+                                    <tr className={styles.tr}>
+                                        {tableColumns.map((column, columnIndex) => (
+                                            <FrozenCell
+                                                isHeading
+                                                key={`head-${column.param}`}
+                                                {...frozenCellProps(columnIndex)}
                                             >
-                                                <div className={styles.helperHead} />
-                                                {timelineTime.breakPoint && (
-                                                    <div>{FUNC.getTimeFormat(timelineTime.time)}</div>
-                                                )}
-                                            </th>
+                                                {column.title}
+                                            </FrozenCell>
                                         ))}
-                                </tr>
-                            </thead>
-                            <tbody className={styles.tbody}>
-                                {data.map((dataItem) => (
-                                    <React.Fragment key={dataItem.id}>
-                                        <tr className={getTrStyles(dataItem)}>
-                                            {tableColumns.map((column, columnIndex) => (
-                                                <FrozenCell
-                                                    key={`body-${column.param}`}
-                                                    rowSpan={dataItem.groupedTimelines?.length}
-                                                    {...frozenCellProps(columnIndex)}
-                                                >
-                                                    {FUNC.getDeepValue(dataItem, column.param)}
-                                                </FrozenCell>
-                                            ))}
-                                            {timelineTimes.map((timelineTime) => (
-                                                <TimelineCell
+                                        <th colSpan={timelineTimes.length || 1} className={styles.th} ref={timelineTitleRef}>
+                                            <div className={styles.timelineTitle} style={stickyStyles}>
+                                                Шкала работ смены: {FUNC.getTimeRange(timelineStartTime, timelineFinishTime)}
+                                            </div>
+                                        </th>
+                                    </tr>
+                                    <tr className={styles.tr}>
+                                        {timelineTimes
+                                            .filter((timelineTime) => timelineTime.type === START_ID)
+                                            .map((timelineTime, timelineTimeIndex) => (
+                                                <th
                                                     key={timelineTime.id}
-                                                    timelineTime={timelineTime}
-                                                    stickyStyles={stickyStyles}
-                                                    dataItem={{
-                                                        ...dataItem,
-                                                        timeline: dataItem.groupedTimelines[0],
-                                                        workCellIndexes: dataItem.workCellIndexes[0],
-                                                    }}
-                                                    rowId={dataItem.groupedTimelines[0][0].rowId}
-                                                    isLastGroup={dataItem.groupedTimelines.length === 1}
-                                                />
+                                                    className={getHeadingTitleClasses(timelineTime)}
+                                                    colSpan={2}
+                                                    style={{ zIndex: (timelineTimes.length - timelineTimeIndex) * 100 }}
+                                                >
+                                                    <div className={styles.helperHead} />
+                                                    {timelineTime.breakPoint && (
+                                                        <div>{FUNC.getTimeFormat(timelineTime.time)}</div>
+                                                    )}
+                                                </th>
                                             ))}
-                                        </tr>
-                                        {dataItem.groupedTimelines.slice(1).map((timelineItem, timelineItemIndex) => (
-                                            <tr
-                                                key={`${dataItem.id}-sub-${timelineItemIndex + 1}`}
-                                                className={getTrStyles(dataItem)}
-                                            >
+                                    </tr>
+                                </thead>
+                                <tbody className={styles.tbody}>
+                                    {data.map((dataItem) => (
+                                        <React.Fragment key={dataItem.id}>
+                                            <tr className={getTrStyles(dataItem)}>
+                                                {tableColumns.map((column, columnIndex) => (
+                                                    <FrozenCell
+                                                        key={`body-${column.param}`}
+                                                        rowSpan={dataItem.groupedTimelines?.length}
+                                                        {...frozenCellProps(columnIndex)}
+                                                    >
+                                                        {FUNC.getDeepValue(dataItem, column.param)}
+                                                    </FrozenCell>
+                                                ))}
                                                 {timelineTimes.map((timelineTime) => (
                                                     <TimelineCell
                                                         key={timelineTime.id}
@@ -348,41 +341,64 @@ const Timeline = ({ initProps }) => {
                                                         stickyStyles={stickyStyles}
                                                         dataItem={{
                                                             ...dataItem,
-                                                            timeline: timelineItem,
-                                                            workCellIndexes: dataItem.workCellIndexes[timelineItemIndex + 1],
+                                                            timeline: dataItem.groupedTimelines[0],
+                                                            workCellIndexes: dataItem.workCellIndexes[0],
                                                         }}
-                                                        rowId={timelineItem[0].rowId}
-                                                        isLastGroup={
-                                                            dataItem.groupedTimelines.length - 2 - timelineItemIndex === 0
-                                                        }
+                                                        rowId={dataItem.groupedTimelines[0][0].rowId}
+                                                        isLastGroup={dataItem.groupedTimelines.length === 1}
                                                     />
                                                 ))}
                                             </tr>
+                                            {dataItem.groupedTimelines.slice(1).map((timelineItem, timelineItemIndex) => (
+                                                <tr
+                                                    key={`${dataItem.id}-sub-${timelineItemIndex + 1}`}
+                                                    className={getTrStyles(dataItem)}
+                                                >
+                                                    {timelineTimes.map((timelineTime) => (
+                                                        <TimelineCell
+                                                            key={timelineTime.id}
+                                                            timelineTime={timelineTime}
+                                                            stickyStyles={stickyStyles}
+                                                            dataItem={{
+                                                                ...dataItem,
+                                                                timeline: timelineItem,
+                                                                workCellIndexes:
+                                                                    dataItem.workCellIndexes[timelineItemIndex + 1],
+                                                            }}
+                                                            rowId={timelineItem[0].rowId}
+                                                            isLastGroup={
+                                                                dataItem.groupedTimelines.length - 2 - timelineItemIndex ===
+                                                                0
+                                                            }
+                                                        />
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </React.Fragment>
+                                    ))}
+                                    <tr className={styles.helperRow}>
+                                        {tableColumns.map((column) => (
+                                            <td key={`helper-${column.param}`} />
                                         ))}
-                                    </React.Fragment>
-                                ))}
-                                <tr className={styles.helperRow}>
-                                    {tableColumns.map((column) => (
-                                        <td key={`helper-${column.param}`} />
-                                    ))}
-                                    {timelineTimes.map((timelineTime) => (
-                                        <td key={`helper-${timelineTime.id}`} />
-                                    ))}
-                                </tr>
-                            </tbody>
-                        </table>
-                    ) : (
-                        <div className={styles.errorMessage}>
-                            <strong>Некорректный временной диапазон!</strong>
-                            <span>
-                                от <q>{FUNC.getDateTime(timelineStartTime)}</q> до{" "}
-                                <q>{FUNC.getDateTime(timelineFinishTime)}</q>
-                            </span>
-                        </div>
-                    )}
-                    <div id={TOOLTIP_PORTAL_ID} style={{ zIndex: 1000 }} />
-                </div>
-            </WorkCreateContext.Provider>
+                                        {timelineTimes.map((timelineTime) => (
+                                            <td key={`helper-${timelineTime.id}`} />
+                                        ))}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        ) : (
+                            <div className={styles.errorMessage}>
+                                <strong>Некорректный временной диапазон!</strong>
+                                <span>
+                                    от <q>{FUNC.getDateTime(timelineStartTime)}</q> до{" "}
+                                    <q>{FUNC.getDateTime(timelineFinishTime)}</q>
+                                </span>
+                            </div>
+                        )}
+                        <div id={TOOLTIP_PORTAL_ID} style={{ zIndex: 1000 }} />
+                    </div>
+                </WorkCreateContext.Provider>
+            </TooltipContext.Provider>
         </PropsContext.Provider>
     );
 };

@@ -455,7 +455,7 @@ deployTimeline({
         },
         {
             transport: {
-                transportName: "КАМАЗ 53215 № 2215",
+                transportName: "КАМАЗ 53215 № 2215 КАМАЗ 53215 № 2215 987887444654545552",
             },
             inventaryNumber: "7036320",
             transportCode: "100500",
