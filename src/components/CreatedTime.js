@@ -40,7 +40,7 @@ const CreatedTime = ({ work, stickyStyles }) => {
                 href={work.modalUrl}
                 className={styles.createdTime}
                 style={{
-                    backgroundColor: FUNC.darkenColor(work.color.background, isHover ? 20 : 0),
+                    backgroundColor: FUNC.darkenColor(work.color, isHover ? 20 : 0),
                     padding: isComputed ? `0 ${paddingSize}px` : "0",
                 }}
                 onMouseEnter={handleChangeMouseEnter}

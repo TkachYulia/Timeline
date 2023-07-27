@@ -4,12 +4,15 @@ import styles from "../main.module.scss";
 import PropsContext from "../../context/PropsContext";
 import TooltipContext from "../../context/TooltipContext";
 
+const orZero = (value) => value || 0;
+
 function Tooltip({ work, children }) {
     const { FUNC } = useContext(PropsContext);
-    const { lastTooltipHoverWorkId, setLastTooltipHoverWorkId } = useContext(TooltipContext);
-    const [coords, setCoords] = useState({ left: 0, top: 0 });
+    const { lastTooltipHoverWorkId, setLastTooltipHoverWorkId, containerRect, containerScrollRect } =
+        useContext(TooltipContext);
+    const [coords, setCoords] = useState({ top: 0, left: 0 });
     const tooltipShift = 20;
-    const tooltipScreenPadding = 10;
+    const tooltipScreenPadding = 30;
 
     const [showTooltip, setShowTooltip] = useState(false);
 
@@ -19,16 +22,20 @@ function Tooltip({ work, children }) {
     const tooltipRef = useRef(null);
 
     const updateTooltipPosition = (e) => {
+        const computedY = e.pageY - orZero(containerRect.y);
+        const computedX = e.pageX - orZero(containerRect.x);
         setCoords({
-            top: e.clientY,
-            left: e.clientX,
+            top: computedY,
+            left: computedX,
         });
         if (tooltipRef.current) {
             setRightAvailable(
-                e.clientX + tooltipShift + tooltipRef.current.clientWidth + tooltipScreenPadding <= window.innerWidth
+                computedX + tooltipShift + tooltipRef.current.clientWidth + tooltipScreenPadding <=
+                    orZero(containerRect.width)
             );
             setDownAvailable(
-                e.clientY + tooltipShift + tooltipRef.current.clientHeight + tooltipScreenPadding <= window.innerHeight
+                computedY + tooltipShift + tooltipRef.current.clientHeight + tooltipScreenPadding <=
+                    orZero(containerRect.height)
             );
         }
     };
@@ -54,12 +61,16 @@ function Tooltip({ work, children }) {
     };
 
     const computedTooltipStyles = {
-        top: isDownAvailable
-            ? coords.top + tooltipShift
-            : coords.top - tooltipShift - (tooltipRef.current?.clientHeight || 0),
-        left: isRightAvailable
-            ? coords.left + tooltipShift
-            : coords.left - tooltipShift - (tooltipRef.current?.clientWidth || 0),
+        top:
+            containerScrollRect.top +
+            (isDownAvailable
+                ? coords.top + tooltipShift
+                : coords.top - tooltipShift - (tooltipRef.current?.clientHeight || 0)),
+        left:
+            containerScrollRect.left +
+            (isRightAvailable
+                ? coords.left + tooltipShift
+                : coords.left - tooltipShift - (tooltipRef.current?.clientWidth || 0)),
     };
 
     return (

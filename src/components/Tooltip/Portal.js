@@ -1,8 +1,11 @@
 import { createPortal } from "react-dom";
-import { TOOLTIP_PORTAL_ID } from "../../exports/constants";
+import { useContext } from "react";
+import PropsContext from "../../context/PropsContext";
 
-const Portal = ({ closeTooltip, children }) => {
-    const portal = document.getElementById(TOOLTIP_PORTAL_ID);
+const Portal = ({ children }) => {
+    const { tooltipContainerId } = useContext(PropsContext);
+
+    const portal = document.getElementById(tooltipContainerId);
 
     return createPortal(children, portal);
 };

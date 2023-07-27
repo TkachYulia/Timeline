@@ -17,9 +17,20 @@ const FrozenCell = ({
 
     const computedClassNames = [styles[isHeading ? "th" : "td"], styles.frozen].join(" ");
 
+    const updateFreezeWidth = () => {
+        updateColumnWidth(columnIndex, cellRef.current.clientWidth);
+    };
+
+    useEffect(() => {
+        window.addEventListener("resize", updateFreezeWidth);
+        return () => {
+            window.removeEventListener("resize", updateFreezeWidth);
+        };
+    }, []);
+
     useEffect(() => {
         if (cellRef.current) {
-            updateColumnWidth(columnIndex, cellRef.current.clientWidth);
+            updateFreezeWidth();
         }
     }, [cellRef.current]);
 

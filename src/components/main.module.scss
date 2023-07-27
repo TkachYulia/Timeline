@@ -24,6 +24,7 @@ $fontFamily: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubun
 }
 
 .container {
+    position: relative;
     overflow-x: auto;
     border: $borderTable;
 
@@ -255,6 +256,7 @@ $fontFamily: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubun
     }
 }
 .tooltip {
+    width: max-content;
     display: flex;
     justify-content: flex-start;
     align-items: flex-start;

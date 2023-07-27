@@ -4,10 +4,10 @@ import Timeline from "./components";
 import { FINISH_ID, START_ID } from "./exports/constants";
 
 const colors = [
-    { background: "#FF9595" }, // Red
-    { background: "#ACB7EF" }, // Blue
-    { background: "#90E094" }, // Green
-    { background: "#FCE08A" }, // Yellow
+    "#FF9595", // Red
+    "#ACB7EF", // Blue
+    "#90E094", // Green
+    "#FCE08A", // Yellow
 ];
 
 function generateColors() {
@@ -30,8 +30,8 @@ const createWork = (workName, startTime, finishTime) => {
 
     return {
         workName,
-        startTime: computedStartTime,
-        finishTime: computedFinishTime,
+        startTime: computedStartTime.getTime(),
+        finishTime: computedFinishTime.getTime(),
         color: generateColors(),
     };
 };
@@ -77,6 +77,8 @@ const deployTimeline = (initProps = {}) => {
 
         return startTimeResult && finishTimeResult;
     };
+
+    const ARRAY = (value) => (Array.isArray(value) ? value : []);
 
     const getTimeFormat = (dateTime) => {
         const config = "2-digit";
@@ -358,6 +360,19 @@ const deployTimeline = (initProps = {}) => {
 
         return darkenedColor;
     };
+
+    const filterUnique = (arr) => {
+        const seenValues = new Set();
+        return ARRAY(arr).filter((item) => {
+            if (!seenValues.has(item.param)) {
+                seenValues.add(item.param);
+                return true;
+            }
+            return false;
+        });
+    };
+    const filteredColumns = filterUnique(initProps.columns);
+
     const FUNC = {
         TIME,
         EQUAL,
@@ -374,7 +389,19 @@ const deployTimeline = (initProps = {}) => {
     };
 
     const root = ReactDOM.createRoot(container);
-    root.render(<Timeline initProps={{ ...initProps, creatable: !!initProps.creatable, CONST, FUNC }} />);
+    root.render(
+        <Timeline
+            initProps={{
+                ...initProps,
+                creatable: !!initProps.creatable,
+                byBreakPoint: !!initProps.byBreakPoint,
+                data: ARRAY(initProps.data),
+                columns: filteredColumns,
+                CONST,
+                FUNC,
+            }}
+        />
+    );
 };
 
 deployTimeline({
@@ -486,4 +513,4 @@ deployTimeline({
     })),
 });
 
-export { deployTimeline };
+window.deployTimeline = deployTimeline;

@@ -14,6 +14,7 @@ const defaultFrozenColumns = {
 };
 
 const Timeline = ({ initProps }) => {
+    const tooltipContainerId = `${initProps.containerId}_${TOOLTIP_PORTAL_ID}`;
     const {
         columns: tableColumns,
         creatable: timelineCreatable,
@@ -101,7 +102,6 @@ const Timeline = ({ initProps }) => {
             const finishTime = Math.max(creatingStartTime, creatingHoverTime);
 
             if (!isOverlapping) {
-                console.log(`New work created!\n${FUNC.getTimeFormat(startTime)} - ${FUNC.getTimeFormat(finishTime)}`);
                 setData((prevData) =>
                     FUNC.formulateWorkTimeline(
                         prevData.map((dataItem) => {
@@ -191,7 +191,7 @@ const Timeline = ({ initProps }) => {
 
             return () => {
                 document.removeEventListener("keydown", keyDownHandler);
-                document.addEventListener("click", handleClickOutside);
+                document.removeEventListener("click", handleClickOutside);
             };
         }
     }, [isCreating]);
@@ -274,12 +274,18 @@ const Timeline = ({ initProps }) => {
                 byBreakPoint,
                 CONST,
                 FUNC,
+                tooltipContainerId,
             }}
         >
             <TooltipContext.Provider
                 value={{
                     lastTooltipHoverWorkId,
                     setLastTooltipHoverWorkId,
+                    containerRect: containerRef.current?.getBoundingClientRect() || {},
+                    containerScrollRect: {
+                        top: containerRef.current?.scrollTop || 0,
+                        left: containerRef.current?.scrollLeft || 0,
+                    },
                 }}
             >
                 <WorkCreateContext.Provider value={workCreateContext}>
@@ -395,7 +401,7 @@ const Timeline = ({ initProps }) => {
                                 </span>
                             </div>
                         )}
-                        <div id={TOOLTIP_PORTAL_ID} style={{ zIndex: 1000 }} />
+                        <div id={tooltipContainerId} style={{ zIndex: 1000 }} />
                     </div>
                 </WorkCreateContext.Provider>
             </TooltipContext.Provider>

@@ -142,7 +142,6 @@ const TimelineCell = ({ timelineTime, dataItem, stickyStyles, rowId, isLastGroup
         if (isCreating && !isCurrentData) return;
 
         if (isOverlapping) {
-            console.error("Невозможно создать действие: пересечение временных интервалов");
             // cancelCreating();
         } else if ((!isCreating || isCurrentData) && !hasWork && (creatingCondition || enabledToCreateWork)) {
             handleClickTimeCell(
