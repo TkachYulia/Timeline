@@ -25,6 +25,7 @@ $fontFamily: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubun
 
 .container {
     position: relative;
+    z-index: 1;
     overflow-x: auto;
     border: $borderTable;
 
@@ -52,6 +53,12 @@ $fontFamily: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubun
             }
             &.frozen {
                 @include frozenCell;
+            }
+            &.numeredColumn {
+                @include frozenCell;
+                position: sticky;
+                left: 0;
+                white-space: nowrap;
             }
             &.time {
                 position: relative;
@@ -104,6 +111,12 @@ $fontFamily: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubun
                     line-height: $lineHeight;
                     &.frozen {
                         @include frozenCell;
+                    }
+                    &.numeredColumn {
+                        @include frozenCell;
+                        position: sticky;
+                        left: 0;
+                        text-align: center;
                     }
                     &:not(.frozen) {
                         max-width: 18px;

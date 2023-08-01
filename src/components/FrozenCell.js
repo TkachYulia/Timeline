@@ -10,6 +10,8 @@ const FrozenCell = ({
     updateColumnWidth,
     isContainerScrolled,
     timelineTitleHeight,
+    numeredColumnWidth,
+    containerWidth,
     children,
 }) => {
     const [freezeStyles, setFreezeStyles] = useState({});
@@ -32,7 +34,7 @@ const FrozenCell = ({
         if (cellRef.current) {
             updateFreezeWidth();
         }
-    }, [cellRef.current]);
+    }, [cellRef.current, containerWidth]);
 
     useEffect(() => {
         if (
@@ -41,9 +43,10 @@ const FrozenCell = ({
         ) {
             setFreezeStyles(() => ({
                 position: "sticky",
-                left: `${frozenColumnsWidth
-                    .slice(0, columnIndex)
-                    .reduce((sum, widthItem) => sum + widthItem.width + 1, 0)}px`,
+                left: `${
+                    frozenColumnsWidth.slice(0, columnIndex).reduce((sum, widthItem) => sum + widthItem.width + 1, 0) +
+                    numeredColumnWidth
+                }px`,
             }));
         }
     }, [frozenColumnsWidth]);

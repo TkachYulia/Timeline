@@ -49,6 +49,7 @@ const Timeline = ({ initProps }) => {
     const containerRef = useRef(null);
     const tableRef = useRef(null);
     const timelineTitleRef = useRef(null);
+    const numeredColumnRef = useRef(null);
 
     const [isContainerScrolled, setContainerScrolled] = useState(false);
 
@@ -248,11 +249,15 @@ const Timeline = ({ initProps }) => {
         return result.join(" ");
     };
 
+    const numeredColumnWidth = numeredColumnRef.current?.clientWidth ? numeredColumnRef.current?.clientWidth + 1 : 0;
+
     useEffect(() => {
         if (frozenColumnsWidth.every((frozenColumnWidth) => frozenColumnWidth.updated)) {
             setStickyStyles(() => ({
                 position: "sticky",
-                left: `${frozenColumnsWidth.reduce((sum, widthItem) => sum + widthItem.width + 1, 0) + 12}px`,
+                left: `${
+                    frozenColumnsWidth.reduce((sum, widthItem) => sum + widthItem.width + 1, 0) + 12 + numeredColumnWidth
+                }px`,
             }));
         }
     }, [frozenColumnsWidth]);
@@ -264,6 +269,8 @@ const Timeline = ({ initProps }) => {
         updateColumnWidth,
         isContainerScrolled,
         timelineTitleHeight,
+        numeredColumnWidth,
+        containerWidth: containerRef.current?.clientWidth || 0,
     });
 
     return (
@@ -294,6 +301,13 @@ const Timeline = ({ initProps }) => {
                             <table className={styles.table} ref={tableRef}>
                                 <thead className={styles.thead}>
                                     <tr className={styles.tr}>
+                                        <th
+                                            className={`${styles.th} ${styles.numeredColumn}`}
+                                            ref={numeredColumnRef}
+                                            rowSpan={2}
+                                        >
+                                            {initProps.numberedColumnTItle}
+                                        </th>
                                         {tableColumns.map((column, columnIndex) => (
                                             <FrozenCell
                                                 isHeading
@@ -305,7 +319,7 @@ const Timeline = ({ initProps }) => {
                                         ))}
                                         <th colSpan={timelineTimes.length || 1} className={styles.th} ref={timelineTitleRef}>
                                             <div className={styles.timelineTitle} style={stickyStyles}>
-                                                Шкала работ смены: {FUNC.getTimeRange(timelineStartTime, timelineFinishTime)}
+                                                {initProps.timelineTitle}
                                             </div>
                                         </th>
                                     </tr>
@@ -328,9 +342,15 @@ const Timeline = ({ initProps }) => {
                                     </tr>
                                 </thead>
                                 <tbody className={styles.tbody}>
-                                    {data.map((dataItem) => (
+                                    {data.map((dataItem, dataItemIndex) => (
                                         <React.Fragment key={dataItem.id}>
                                             <tr className={getTrStyles(dataItem)}>
+                                                <td
+                                                    className={`${styles.td} ${styles.numeredColumn}`}
+                                                    rowSpan={dataItem.groupedTimelines.length}
+                                                >
+                                                    {dataItemIndex + 1}
+                                                </td>
                                                 {tableColumns.map((column, columnIndex) => (
                                                     <FrozenCell
                                                         key={`body-${column.param}`}

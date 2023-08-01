@@ -397,6 +397,7 @@ const deployTimeline = (initProps = {}) => {
                 byBreakPoint: !!initProps.byBreakPoint,
                 data: ARRAY(initProps.data),
                 columns: filteredColumns,
+                numberedColumnTItle: initProps.numberedColumnTItle || "п/п",
                 CONST,
                 FUNC,
             }}
@@ -408,10 +409,7 @@ deployTimeline({
     containerId: "root",
     startTime: new Date().setHours(7, 0, 0, 0),
     finishTime: new Date().setHours(19, 0, 0, 0),
-    creatable: false,
-    byBreakPoint: false,
-    displayStep: 10,
-    createStep: 60,
+    timelineTitle: "SOme title",
     columns: [
         {
             title: "Транспорт",
