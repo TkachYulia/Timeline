@@ -37,15 +37,58 @@ const createWork = (workName, startTime, finishTime) => {
 };
 
 const deployTimeline = (initProps = {}) => {
-    if (!initProps.containerId || !initProps.columns || !initProps.startTime || !initProps.finishTime) return;
-
     const container = document.getElementById(initProps.containerId);
     const displayStep = initProps.displayStep || 10;
     const createStep = initProps.createStep || 60;
     const totalDuration = TIME(initProps.finishTime) - TIME(initProps.startTime);
 
-    if (!container || totalDuration % displayStep !== 0 || totalDuration % createStep !== 0 || displayStep > createStep)
+    let ERROR = null;
+    const listRequiredParams = ["containerId", "startTime", "finishTime", "columns", "data"];
+    if (listRequiredParams.some((requiredParam) => !initProps[requiredParam])) {
+        ERROR = (
+            <>
+                {listRequiredParams
+                    .filter((requiredParam) => !initProps[requiredParam])
+                    .map((requiredParam) => (
+                        <strong key={requiredParam}>Отсутствует параметр {requiredParam}!</strong>
+                    ))}
+            </>
+        );
+    }
+
+    if (!container) {
+        if (initProps.containerId) {
+            console.error(`Не найден контейнер с id "${initProps.containerId}"!`);
+        } else {
+            console.error(`Отсутствует containerId!`);
+        }
         return;
+    } else if (initProps.startTime >= initProps.finishTime) {
+        ERROR = (
+            <>
+                <strong>Некорректный временной диапазон!</strong>
+                <span>
+                    от <q>{getDateTime(initProps.startTime)}</q> до <q>{getDateTime(initProps.finishTime)}</q>
+                </span>
+            </>
+        );
+    } else if (totalDuration % displayStep !== 0) {
+        ERROR = <strong>Общее время не кратно {displayStep} (displayStep)!</strong>;
+    } else if (totalDuration % createStep !== 0) {
+        ERROR = <strong>Общее время не кратно {createStep} (createStep)!</strong>;
+    } else if (displayStep > createStep) {
+        ERROR = (
+            <strong>
+                {displayStep} (displayStep) не может быть больше {createStep} (createStep)!
+            </strong>
+        );
+    } else if (createStep % displayStep !== 0) {
+        ERROR = (
+            <strong>
+                {createStep} (createStep) не кратно {displayStep} (displayStep)!
+            </strong>
+        );
+    }
 
     // Constants
     const milliseconds = 60 * 1000;
@@ -53,6 +96,7 @@ const deployTimeline = (initProps = {}) => {
     const TIME_STEP_DISPLAY = displayStep * milliseconds;
 
     const CONST = {
+        ERROR,
         TIME_STEP_DISPLAY,
         TIME_STEP_CREATE: createStep * milliseconds,
     };
@@ -85,7 +129,7 @@ const deployTimeline = (initProps = {}) => {
         return new Date(dateTime).toLocaleTimeString([], { hour: config, minute: config });
     };
 
-    const getDateTime = (dateTime) => {
+    function getDateTime(dateTime) {
         const fillString = "0";
         dateTime = new Date(dateTime);
         const day = String(dateTime.getDate()).padStart(2, fillString);
@@ -95,7 +139,7 @@ const deployTimeline = (initProps = {}) => {
         const minutes = String(dateTime.getMinutes()).padStart(2, fillString);
 
         return `${day}.${month}.${year} ${hours}:${minutes}`;
-    };
+    }
 
     const createTimelineTimes = (startTime, finishTime) => {
         const result = [];
@@ -388,6 +432,11 @@ const deployTimeline = (initProps = {}) => {
         darkenColor,
     };
 
+    const getString = (value, defaultValue = "") => {
+        if (!value || typeof value !== "string") return defaultValue;
+        return value;
+    };
+
     const root = ReactDOM.createRoot(container);
     root.render(
         <Timeline
@@ -397,7 +446,8 @@ const deployTimeline = (initProps = {}) => {
                 byBreakPoint: !!initProps.byBreakPoint,
                 data: ARRAY(initProps.data),
                 columns: filteredColumns,
-                numberedColumnTItle: initProps.numberedColumnTItle || "п/п",
+                numberedColumnTitle: getString(initProps.numberedColumnTitle, "п/п"),
+                timelineTitle: getString(initProps.timelineTitle),
                 CONST,
                 FUNC,
             }}
@@ -409,7 +459,7 @@ deployTimeline({
     containerId: "root",
     startTime: new Date().setHours(7, 0, 0, 0),
     finishTime: new Date().setHours(19, 0, 0, 0),
-    timelineTitle: "SOme title",
+    timelineTitle: "Some title",
     columns: [
         {
             title: "Транспорт",

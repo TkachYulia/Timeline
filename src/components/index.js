@@ -26,8 +26,6 @@ const Timeline = ({ initProps }) => {
         FUNC,
     } = initProps;
 
-    const isTimelineCorrect = timelineStartTime < timelineFinishTime;
-
     const [timelineTimes, setTimelineTimes] = useState(FUNC.createTimelineTimes(timelineStartTime, timelineFinishTime));
     const [data, setData] = useState(FUNC.formulateWorkTimeline(initialData, timelineTimes));
 
@@ -297,7 +295,7 @@ const Timeline = ({ initProps }) => {
             >
                 <WorkCreateContext.Provider value={workCreateContext}>
                     <div className={styles.container} ref={containerRef}>
-                        {isTimelineCorrect ? (
+                        {!CONST.ERROR ? (
                             <table className={styles.table} ref={tableRef}>
                                 <thead className={styles.thead}>
                                     <tr className={styles.tr}>
@@ -306,7 +304,7 @@ const Timeline = ({ initProps }) => {
                                             ref={numeredColumnRef}
                                             rowSpan={2}
                                         >
-                                            {initProps.numberedColumnTItle}
+                                            {initProps.numberedColumnTitle}
                                         </th>
                                         {tableColumns.map((column, columnIndex) => (
                                             <FrozenCell
@@ -342,44 +340,25 @@ const Timeline = ({ initProps }) => {
                                     </tr>
                                 </thead>
                                 <tbody className={styles.tbody}>
-                                    {data.map((dataItem, dataItemIndex) => (
-                                        <React.Fragment key={dataItem.id}>
-                                            <tr className={getTrStyles(dataItem)}>
-                                                <td
-                                                    className={`${styles.td} ${styles.numeredColumn}`}
-                                                    rowSpan={dataItem.groupedTimelines.length}
-                                                >
-                                                    {dataItemIndex + 1}
-                                                </td>
-                                                {tableColumns.map((column, columnIndex) => (
-                                                    <FrozenCell
-                                                        key={`body-${column.param}`}
-                                                        rowSpan={dataItem.groupedTimelines?.length}
-                                                        {...frozenCellProps(columnIndex)}
+                                    {data.length > 0 ? (
+                                        data.map((dataItem, dataItemIndex) => (
+                                            <React.Fragment key={dataItem.id}>
+                                                <tr className={getTrStyles(dataItem)}>
+                                                    <td
+                                                        className={`${styles.td} ${styles.numeredColumn}`}
+                                                        rowSpan={dataItem.groupedTimelines.length}
                                                     >
-                                                        {FUNC.getDeepValue(dataItem, column.param)}
-                                                    </FrozenCell>
-                                                ))}
-                                                {timelineTimes.map((timelineTime) => (
-                                                    <TimelineCell
-                                                        key={timelineTime.id}
-                                                        timelineTime={timelineTime}
-                                                        stickyStyles={stickyStyles}
-                                                        dataItem={{
-                                                            ...dataItem,
-                                                            timeline: dataItem.groupedTimelines[0],
-                                                            workCellIndexes: dataItem.workCellIndexes[0],
-                                                        }}
-                                                        rowId={dataItem.groupedTimelines[0][0].rowId}
-                                                        isLastGroup={dataItem.groupedTimelines.length === 1}
-                                                    />
-                                                ))}
-                                            </tr>
-                                            {dataItem.groupedTimelines.slice(1).map((timelineItem, timelineItemIndex) => (
-                                                <tr
-                                                    key={`${dataItem.id}-sub-${timelineItemIndex + 1}`}
-                                                    className={getTrStyles(dataItem)}
-                                                >
+                                                        {dataItemIndex + 1}
+                                                    </td>
+                                                    {tableColumns.map((column, columnIndex) => (
+                                                        <FrozenCell
+                                                            key={`body-${column.param}`}
+                                                            rowSpan={dataItem.groupedTimelines?.length}
+                                                            {...frozenCellProps(columnIndex)}
+                                                        >
+                                                            {FUNC.getDeepValue(dataItem, column.param)}
+                                                        </FrozenCell>
+                                                    ))}
                                                     {timelineTimes.map((timelineTime) => (
                                                         <TimelineCell
                                                             key={timelineTime.id}
@@ -387,21 +366,59 @@ const Timeline = ({ initProps }) => {
                                                             stickyStyles={stickyStyles}
                                                             dataItem={{
                                                                 ...dataItem,
-                                                                timeline: timelineItem,
-                                                                workCellIndexes:
-                                                                    dataItem.workCellIndexes[timelineItemIndex + 1],
+                                                                timeline: dataItem.groupedTimelines[0],
+                                                                workCellIndexes: dataItem.workCellIndexes[0],
                                                             }}
-                                                            rowId={timelineItem[0].rowId}
-                                                            isLastGroup={
-                                                                dataItem.groupedTimelines.length - 2 - timelineItemIndex ===
-                                                                0
-                                                            }
+                                                            rowId={dataItem.groupedTimelines[0][0].rowId}
+                                                            isLastGroup={dataItem.groupedTimelines.length === 1}
                                                         />
                                                     ))}
                                                 </tr>
-                                            ))}
-                                        </React.Fragment>
-                                    ))}
+                                                {dataItem.groupedTimelines
+                                                    .slice(1)
+                                                    .map((timelineItem, timelineItemIndex) => (
+                                                        <tr
+                                                            key={`${dataItem.id}-sub-${timelineItemIndex + 1}`}
+                                                            className={getTrStyles(dataItem)}
+                                                        >
+                                                            {timelineTimes.map((timelineTime) => (
+                                                                <TimelineCell
+                                                                    key={timelineTime.id}
+                                                                    timelineTime={timelineTime}
+                                                                    stickyStyles={stickyStyles}
+                                                                    dataItem={{
+                                                                        ...dataItem,
+                                                                        timeline: timelineItem,
+                                                                        workCellIndexes:
+                                                                            dataItem.workCellIndexes[timelineItemIndex + 1],
+                                                                    }}
+                                                                    rowId={timelineItem[0].rowId}
+                                                                    isLastGroup={
+                                                                        dataItem.groupedTimelines.length -
+                                                                            2 -
+                                                                            timelineItemIndex ===
+                                                                        0
+                                                                    }
+                                                                />
+                                                            ))}
+                                                        </tr>
+                                                    ))}
+                                            </React.Fragment>
+                                        ))
+                                    ) : (
+                                        <tr className={`${styles.tr} ${styles.empty}`}>
+                                            <td className={styles.td} colSpan={tableColumns.length + timelineTimes.length}>
+                                                <div
+                                                    className={styles.messageContainer}
+                                                    style={{
+                                                        width: `${containerRef.current?.clientWidth || 0}px`,
+                                                    }}
+                                                >
+                                                    Нет данных
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
                                     <tr className={styles.helperRow}>
                                         {tableColumns.map((column) => (
                                             <td key={`helper-${column.param}`} />
@@ -413,13 +430,7 @@ const Timeline = ({ initProps }) => {
                                 </tbody>
                             </table>
                         ) : (
-                            <div className={styles.errorMessage}>
-                                <strong>Некорректный временной диапазон!</strong>
-                                <span>
-                                    от <q>{FUNC.getDateTime(timelineStartTime)}</q> до{" "}
-                                    <q>{FUNC.getDateTime(timelineFinishTime)}</q>
-                                </span>
-                            </div>
+                            <div className={styles.errorMessage}>{CONST.ERROR}</div>
                         )}
                         <div id={tooltipContainerId} style={{ zIndex: 1000 }} />
                     </div>
