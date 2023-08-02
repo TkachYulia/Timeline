@@ -1,13 +1,13 @@
 # API
 
-## Main usage:
+### Main usage
 ```
 deployTimeline({
     ...
 })
 ```
 
-## Configuration
+### Configuration
 | Parameter            | Type      | Required | Description                                      | Default Value |
 |----------------------|-----------|----------|--------------------------------------------------|---------------|
 | `containerId`        | `string`  | Yes      | ID of the deploy container                       | -             |
@@ -22,19 +22,19 @@ deployTimeline({
 | `createStep`         | `number`  | No       | The size of breakpoints, measured in minutes     | `60`          |
 | `displayStep`        | `number`  | No       | The size of small divisions between breakpoints, measured in minutes | `10` |
 
-## Column API
+### Column API
 | Parameter        | Type      | Description                                       |
 |------------------|-----------|---------------------------------------------------|
 | `title`          | `string`  | Displayable title of the column                   |
 | `param`          | `string`  | Name of the parameter                             |
 
-## Data API
+### Data API
 The Data object has its own initial data parameters, in addition to the following:
 | Parameter        | Type      | Description                                       |
 |------------------|-----------|---------------------------------------------------|
 | `timeline`       | `array`   | Array of [timeline objects](#timeline-item-api)        |
 
-## Timeline Item API
+### Timeline Item API
 | Parameter        | Type      | Description                                       |
 |------------------|-----------|---------------------------------------------------|
 | `workName`       | `string`  | Name of the timeline item                         |
