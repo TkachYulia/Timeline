@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import styles from "./main.module.scss";
+import styles from "./Timeline.module.scss";
 import FrozenCell from "./FrozenCell";
 import TimelineCell from "./TimelineCell";
 import WorkCreateContext from "../context/WorkCreateContext";
@@ -50,11 +50,10 @@ const Timeline = ({ initProps }) => {
     const numeredColumnRef = useRef(null);
 
     const [isContainerScrolled, setContainerScrolled] = useState(false);
+    const [containerScrollRect, setContainerScrollRect] = useState({});
 
     const [timelineTitleHeight, setTimelineTitleHeight] = useState(0);
     const [stickyStyles, setStickyStyles] = useState({});
-
-    const [lastTooltipHoverWorkId, setLastTooltipHoverWorkId] = useState(null);
 
     useEffect(() => {
         setTimelineTimes(FUNC.createTimelineTimes(timelineStartTime, timelineFinishTime));
@@ -168,6 +167,7 @@ const Timeline = ({ initProps }) => {
         setRightDimension,
         setRightDimensionAvailable,
         timelineCreatable,
+        stickyStyles,
     };
 
     useEffect(() => {
@@ -195,6 +195,23 @@ const Timeline = ({ initProps }) => {
         }
     }, [isCreating]);
 
+    const getContainerScrollRect = () => ({
+        top: containerRef.current?.scrollTop || 0,
+        left: containerRef.current?.scrollLeft || 0,
+        y: containerRef.current?.getBoundingClientRect()?.y || 0,
+        width: containerRef.current?.clientWidth || 0,
+    });
+
+    const updateContainerScrollRect = () => {
+        setContainerScrollRect(getContainerScrollRect());
+    };
+
+    useEffect(() => {
+        if (containerScrollRect.y !== containerRef.current?.getBoundingClientRect()?.y) {
+            updateContainerScrollRect();
+        }
+    }, [containerRef.current?.getBoundingClientRect()]);
+
     useEffect(() => {
         const checkScrollPosition = () => {
             if (containerRef.current) {
@@ -203,16 +220,33 @@ const Timeline = ({ initProps }) => {
             }
         };
 
+        const debouncedHandleResize = FUNC.DEBOUNCE(updateContainerScrollRect, 50);
+
         if (containerRef.current) {
             containerRef.current.addEventListener("scroll", checkScrollPosition);
+            containerRef.current.addEventListener("scroll", debouncedHandleResize);
         }
 
         return () => {
             if (containerRef.current) {
                 containerRef.current.removeEventListener("scroll", checkScrollPosition);
+                containerRef.current.removeEventListener("scroll", debouncedHandleResize);
             }
         };
     }, []);
+
+    useEffect(() => {
+        if (containerRef.current) {
+            updateContainerScrollRect();
+        }
+
+        const debouncedHandleResize = FUNC.DEBOUNCE(updateContainerScrollRect, 100);
+
+        window.addEventListener("resize", debouncedHandleResize);
+        return () => {
+            window.removeEventListener("resize", debouncedHandleResize);
+        };
+    }, [containerRef]);
 
     const getHeadingTitleClasses = (timelineTime) => {
         const resultClasses = [styles.th, styles.time];
@@ -284,13 +318,8 @@ const Timeline = ({ initProps }) => {
         >
             <TooltipContext.Provider
                 value={{
-                    lastTooltipHoverWorkId,
-                    setLastTooltipHoverWorkId,
                     containerRect: containerRef.current?.getBoundingClientRect() || {},
-                    containerScrollRect: {
-                        top: containerRef.current?.scrollTop || 0,
-                        left: containerRef.current?.scrollLeft || 0,
-                    },
+                    containerScrollRect,
                 }}
             >
                 <WorkCreateContext.Provider value={workCreateContext}>
@@ -316,9 +345,11 @@ const Timeline = ({ initProps }) => {
                                             </FrozenCell>
                                         ))}
                                         <th colSpan={timelineTimes.length || 1} className={styles.th} ref={timelineTitleRef}>
-                                            <div className={styles.timelineTitle} style={stickyStyles}>
-                                                {initProps.timelineTitle}
-                                            </div>
+                                            <div
+                                                className={styles.timelineTitle}
+                                                style={stickyStyles}
+                                                dangerouslySetInnerHTML={{ __html: initProps.timelineTitle }}
+                                            />
                                         </th>
                                     </tr>
                                     <tr className={styles.tr}>
@@ -369,7 +400,7 @@ const Timeline = ({ initProps }) => {
                                                                 timeline: dataItem.groupedTimelines[0],
                                                                 workCellIndexes: dataItem.workCellIndexes[0],
                                                             }}
-                                                            rowId={dataItem.groupedTimelines[0][0].rowId}
+                                                            rowId={dataItem.groupedTimelines[0][0]?.rowId}
                                                             isLastGroup={dataItem.groupedTimelines.length === 1}
                                                         />
                                                     ))}

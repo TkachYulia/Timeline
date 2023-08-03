@@ -7,6 +7,7 @@ const Portal = ({ children }) => {
 
     const portal = document.getElementById(tooltipContainerId);
 
+    if (!portal) return null;
     return createPortal(children, portal);
 };
 

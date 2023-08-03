@@ -1,6 +1,6 @@
 import { useContext, useMemo } from "react";
 import CreatedTime from "./CreatedTime";
-import styles from "./main.module.scss";
+import styles from "./Timeline.module.scss";
 import WorkCreateContext from "../context/WorkCreateContext";
 import { FINISH_ID, START_ID } from "../exports/constants";
 import PropsContext from "../context/PropsContext";
@@ -11,7 +11,9 @@ const TimelineCell = ({ timelineTime, dataItem, stickyStyles, rowId, isLastGroup
 
     const computedClassNames = [styles.td, styles.timeCell];
 
-    const currentTimelineGroup = dataItem.groupedTimelines?.find((groupedTimeline) => groupedTimeline[0].rowId === rowId);
+    const currentTimelineGroup = !!rowId
+        ? dataItem.groupedTimelines?.find((groupedTimeline) => groupedTimeline[0].rowId === rowId)
+        : undefined;
 
     const work = useMemo(
         () =>

@@ -3,6 +3,18 @@ import ReactDOM from "react-dom/client";
 import Timeline from "./components";
 import { FINISH_ID, START_ID } from "./exports/constants";
 
+function DATE(time) {
+    if (!time) return DATE_MINUS_LOCAL_TZ();
+    return new Date(time);
+}
+
+function DATE_MINUS_LOCAL_TZ(time = new Date().getTime()) {
+    const receivedTime = new Date(time);
+    const timezoneOffsetInMinutes = receivedTime.getTimezoneOffset();
+    receivedTime.setMinutes(receivedTime.getMinutes() + timezoneOffsetInMinutes);
+    return receivedTime;
+}
+
 const colors = [
     "#FF9595", // Red
     "#ACB7EF", // Blue
@@ -20,11 +32,11 @@ const createWork = (workName, startTime, finishTime) => {
     currentTime.setSeconds(0);
     currentTime.setMilliseconds(0);
 
-    const computedStartTime = new Date(currentTime);
+    const computedStartTime = DATE(currentTime);
     computedStartTime.setHours(startTime.split(":")[0]);
     computedStartTime.setMinutes(startTime.split(":")[1]);
 
-    const computedFinishTime = new Date(currentTime);
+    const computedFinishTime = DATE(currentTime);
     computedFinishTime.setHours(finishTime.split(":")[0]);
     computedFinishTime.setMinutes(finishTime.split(":")[1]);
 
@@ -37,6 +49,13 @@ const createWork = (workName, startTime, finishTime) => {
 };
 
 const deployTimeline = (initProps = {}) => {
+    if (typeof initProps === "string") {
+        try {
+            initProps = JSON.parse(initProps);
+        } catch (error) {
+            return;
+        }
+    }
     const container = document.getElementById(initProps.containerId);
     const displayStep = initProps.displayStep || 10;
     const createStep = initProps.createStep || 60;
@@ -55,6 +74,9 @@ const deployTimeline = (initProps = {}) => {
             </>
         );
     }
+
+    initProps.startTime = DATE_MINUS_LOCAL_TZ(initProps.startTime).getTime();
+    initProps.finishTime = DATE_MINUS_LOCAL_TZ(initProps.finishTime).getTime();
 
     if (!container) {
         if (initProps.containerId) {
@@ -102,9 +124,20 @@ const deployTimeline = (initProps = {}) => {
     };
 
     // Functions
+    function DATE(time) {
+        if (!time) return DATE_MINUS_LOCAL_TZ();
+        return new Date(time);
+    }
+
+    function DATE_MINUS_LOCAL_TZ(time = new Date().getTime()) {
+        const receivedTime = new Date(time);
+        const timezoneOffsetInMinutes = receivedTime.getTimezoneOffset();
+        receivedTime.setMinutes(receivedTime.getMinutes() + timezoneOffsetInMinutes);
+        return receivedTime;
+    }
+
     function TIME(datetime) {
-        if (!datetime) return new Date().getTime();
-        return new Date(datetime).getTime();
+        return DATE(datetime).getTime();
     }
 
     const EQUAL = (time1, time2) => {
@@ -124,14 +157,22 @@ const deployTimeline = (initProps = {}) => {
 
     const ARRAY = (value) => (Array.isArray(value) ? value : []);
 
+    const DEBOUNCE = (fn, delay) => {
+        let timer;
+        return function (...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn.apply(this, args), delay);
+        };
+    };
+
     const getTimeFormat = (dateTime) => {
         const config = "2-digit";
-        return new Date(dateTime).toLocaleTimeString([], { hour: config, minute: config });
+        return DATE(dateTime).toLocaleTimeString([], { hour: config, minute: config });
     };
 
     function getDateTime(dateTime) {
         const fillString = "0";
-        dateTime = new Date(dateTime);
+        dateTime = DATE(dateTime);
         const day = String(dateTime.getDate()).padStart(2, fillString);
         const month = String(dateTime.getMonth() + 1).padStart(2, fillString);
         const year = dateTime.getFullYear();
@@ -146,7 +187,7 @@ const deployTimeline = (initProps = {}) => {
         let currentTime = startTime;
 
         while (currentTime <= finishTime) {
-            const time = new Date(currentTime);
+            const time = DATE(currentTime);
             [FINISH_ID, START_ID].forEach((timeType) => {
                 result.push({
                     id: `${timeType}-${time.getTime()}`,
@@ -178,7 +219,7 @@ const deployTimeline = (initProps = {}) => {
     const getClosestTimePoint = (time) => {
         return (
             Math.round(TIME(time) / TIME_STEP_DISPLAY) * TIME_STEP_DISPLAY +
-            new Date(initProps.startTime).getMinutes() * milliseconds
+            DATE(initProps.startTime).getMinutes() * milliseconds
         );
     };
 
@@ -250,6 +291,8 @@ const deployTimeline = (initProps = {}) => {
 
             const computedDataTimelines = computedTimelines.map((timeline, timelineIndex) =>
                 timeline.map((work, workIndex) => {
+                    work.startTime = DATE_MINUS_LOCAL_TZ(work.startTime).getTime();
+                    work.finishTime = DATE_MINUS_LOCAL_TZ(work.finishTime).getTime();
                     const { startTime: computedStartTime, finishTime: computedFinishTime } = roundTime(work);
                     return {
                         ...work,
@@ -261,7 +304,7 @@ const deployTimeline = (initProps = {}) => {
                         originalFinishTime: work.originalFinishTime || work.finishTime,
                         colSpan: calculateColSpan(computedStartTime, computedFinishTime),
                         hiddenRange: [computedStartTime, computedFinishTime],
-                        isEndsWithBreakPoint: new Date(computedFinishTime).getMinutes() === 0,
+                        isEndsWithBreakPoint: DATE(computedFinishTime).getMinutes() === 0,
                     };
                 })
             );
@@ -356,8 +399,8 @@ const deployTimeline = (initProps = {}) => {
     };
 
     const getTimeRange = (rangeStartTime, rangeFinishTime, forTooltip = false) => {
-        const startFormatted = extractDateTimeInfo(new Date(rangeStartTime));
-        const finishFormatted = extractDateTimeInfo(new Date(rangeFinishTime));
+        const startFormatted = extractDateTimeInfo(DATE(rangeStartTime));
+        const finishFormatted = extractDateTimeInfo(DATE(rangeFinishTime));
 
         if (startFormatted.date === finishFormatted.date && startFormatted.year === finishFormatted.year) {
             return `${forTooltip ? "" : `${getFormatted(startFormatted, false, true)} `}${joinTime(
@@ -421,6 +464,7 @@ const deployTimeline = (initProps = {}) => {
         TIME,
         EQUAL,
         BETWEEN,
+        DEBOUNCE,
         getTimeFormat,
         getDateTime,
         createTimelineTimes,
@@ -457,108 +501,73 @@ const deployTimeline = (initProps = {}) => {
 
 deployTimeline({
     containerId: "root",
-    startTime: new Date().setHours(7, 0, 0, 0),
-    finishTime: new Date().setHours(19, 0, 0, 0),
-    timelineTitle: "Some title",
+    startTime: 1688371200000,
+    finishTime: 1688414400000,
+    timelineTitle: "Дата: 03.07.2023, Режим работы: 2я смена, Время: 08:00 - 20:00",
     columns: [
         {
-            title: "Транспорт",
-            param: "transport.transportName",
+            title: "Марка ТС",
+            param: "modelName",
         },
         {
-            title: "Инвентарный номер",
-            param: "inventaryNumber",
+            title: "Гос. номер",
+            param: "transportNo",
         },
         {
-            title: "Код транспорта",
-            param: "transportCode",
+            title: "Гар. номер",
+            param: "garageNo",
         },
     ],
     data: [
         {
-            transport: {
-                transportName: "КАМАЗ 53215 № 2215 КАМАЗ 53215 № 2215 555555555555555555587987",
-            },
-            inventaryNumber: "7036320",
-            transportCode: "100500",
+            id: 1,
+            modelName: "ЧСДМ ДЗ-98",
+            transportNo: "S390ACD",
+            garageNo: "",
             timeline: [
-                createWork("Выполнить земляные работы", "8:03", "8:06"),
-                createWork("Выполнить земляные работы", "8:01", "8:04"),
-                createWork("Выполнить земляные работы", "7:50", "8:09"),
-                createWork("Перевезти грунт на склад", "09:00", "12:00"),
-                createWork("Обслуживание", "09:00", "10:00"),
-                createWork("Подготовить к работе", "11:00", "18:00"),
-                createWork("Ремонт", "12:00", "19:00"),
-                createWork("Завершить выемку траншеи", "11:00", "18:30"),
+                {
+                    workName: "1. Техническое обслуживание - ",
+                    startTime: 1688385600000,
+                    finishTime: 1688389800000,
+                    color: "#F2DCDB",
+                    modalUrl:
+                        "javascript:apex.navigation.dialog('f?p=443:415:14774696435957:::CIR,415:P415_BID_ID,P415_DRAFT_ID:,64\u0026cs=3dWvvyYXh8M8QT0sZLy9I5WZGylTgrr-2I_x5Jl5152AxlJlFAr-qrW0xOj7rfTRL_iulz-UTNRlNCgvNphLL9A\u0026p_dialog_cs=E5uoUhy0xJi7sd2Ah-JYlTdqpIuCNzGmn4uvspitt4usiQkR1vQLWQKpWOXJKJBxH4KllBQxV0pab9hrYmN9mg',{title:'\u0424\u043E\u0440\u043C\u0430 \u0022\u0417\u0430\u044F\u0432\u043A\u0430 \u0422\u002F\u0421\u0022',height:'auto',width:'720',maxWidth:'960',modal:true,dialog:null},'t-Dialog-page--standard '+'',this);",
+                },
+                {
+                    workName: "2. Техническое обслуживание - ",
+                    startTime: 1688385600000 + 7 * 60 * 60 * 1000,
+                    finishTime: 1688389800000 + 7 * 60 * 60 * 1000 - 10 * 60 * 1000,
+                    color: "#CDB",
+                    modalUrl:
+                        "javascript:apex.navigation.dialog('f?p=443:415:14774696435957:::CIR,415:P415_BID_ID,P415_DRAFT_ID:,64\u0026cs=3dWvvyYXh8M8QT0sZLy9I5WZGylTgrr-2I_x5Jl5152AxlJlFAr-qrW0xOj7rfTRL_iulz-UTNRlNCgvNphLL9A\u0026p_dialog_cs=E5uoUhy0xJi7sd2Ah-JYlTdqpIuCNzGmn4uvspitt4usiQkR1vQLWQKpWOXJKJBxH4KllBQxV0pab9hrYmN9mg',{title:'\u0424\u043E\u0440\u043C\u0430 \u0022\u0417\u0430\u044F\u0432\u043A\u0430 \u0422\u002F\u0421\u0022',height:'auto',width:'720',maxWidth:'960',modal:true,dialog:null},'t-Dialog-page--standard '+'',this);",
+                },
             ],
         },
         {
-            transport: {
-                transportName: "КАМАЗ 53215 № 2215",
-            },
-            inventaryNumber: "7036320",
-            transportCode: "100500",
+            id: 2,
+            modelName: "АЦ-3.2-40",
+            transportNo: "S994MA",
+            garageNo: "",
             timeline: [
-                createWork("Проверить систему гидравлики", "8:03", "8:08"),
-                createWork("Управление движением грузовиков на территории", "9:00", "16:00"),
-                createWork("Заправить топливом самосвалы", "08:30", "09:30"),
+                {
+                    workName: "1. Техническое обслуживание - ТО (Замена двигателя)",
+                    startTime: 1688396400000,
+                    finishTime: 1688414400000,
+                    color: "#F2DCDB",
+                    modalUrl:
+                        "javascript:apex.navigation.dialog('f?p=443:415:14774696435957:::CIR,415:P415_BID_ID,P415_DRAFT_ID:,105\u0026cs=3a_cddtXfI3WVDyv0RtUhw5CYyoTrTLxDH9ydEn078_MlJ8t0DqwpqMCT6vjR1a1-aKdvo0q8qMuvCYMWb-Rjgg\u0026p_dialog_cs=E5uoUhy0xJi7sd2Ah-JYlTdqpIuCNzGmn4uvspitt4usiQkR1vQLWQKpWOXJKJBxH4KllBQxV0pab9hrYmN9mg',{title:'\u0424\u043E\u0440\u043C\u0430 \u0022\u0417\u0430\u044F\u0432\u043A\u0430 \u0422\u002F\u0421\u0022',height:'auto',width:'720',maxWidth:'960',modal:true,dialog:null},'t-Dialog-page--standard '+'',this);",
+                },
+                {
+                    workName: "1. Техническое обслуживание - ТО (Замена двигателя)",
+                    startTime: 1688396400000 - 3 * 60 * 60 * 1000,
+                    finishTime: 1688414400000 - 4 * 60 * 60 * 1000,
+                    color: "#FDB",
+                    modalUrl:
+                        "javascript:apex.navigation.dialog('f?p=443:415:14774696435957:::CIR,415:P415_BID_ID,P415_DRAFT_ID:,105\u0026cs=3a_cddtXfI3WVDyv0RtUhw5CYyoTrTLxDH9ydEn078_MlJ8t0DqwpqMCT6vjR1a1-aKdvo0q8qMuvCYMWb-Rjgg\u0026p_dialog_cs=E5uoUhy0xJi7sd2Ah-JYlTdqpIuCNzGmn4uvspitt4usiQkR1vQLWQKpWOXJKJBxH4KllBQxV0pab9hrYmN9mg',{title:'\u0424\u043E\u0440\u043C\u0430 \u0022\u0417\u0430\u044F\u0432\u043A\u0430 \u0422\u002F\u0421\u0022',height:'auto',width:'720',maxWidth:'960',modal:true,dialog:null},'t-Dialog-page--standard '+'',this);",
+                },
             ],
         },
-        {
-            transport: {
-                transportName: "КАМАЗ 53215 № 2215",
-            },
-            inventaryNumber: "7036320",
-            transportCode: "100500",
-            timeline: [
-                createWork("Поднять и установить новый ковш", "8:03", "8:16"),
-                createWork("Перевезти материалы на строительную площадку", "11:00", "12:20"),
-                createWork("Перевезти материалы на строительную площадку 2", "14:00", "18:10"),
-            ],
-        },
-        {
-            transport: {
-                transportName: "КАМАЗ 53215 № 2215",
-            },
-            inventaryNumber: "7036320",
-            transportCode: "100500",
-            timeline: [
-                createWork("Подготовить экскаватор к утреннему сеансу работы", "8:03", "8:21"),
-                createWork("Загрузить самосвалы грунтом", "10:00", "11:30"),
-                createWork("Загрузить самосвалы грунтом 2", "15:00", "19:00"),
-            ],
-        },
-        {
-            transport: {
-                transportName: "КАМАЗ 53215 № 2215 КАМАЗ 53215 № 2215 987887444654545552",
-            },
-            inventaryNumber: "7036320",
-            transportCode: "100500",
-            timeline: [
-                createWork("Заправить топливом экскаваторы и самосвалы", "7:33", "8:02"),
-                createWork("Передвинуть самосвалы на площадку для погрузки", "11:00", "12:00"),
-            ],
-        },
-        {
-            transport: {
-                transportName: "КАМАЗ 53215 № 2215",
-            },
-            inventaryNumber: "6854998",
-            transportCode: "155044",
-            timeline: [
-                createWork("Удалить и утилизировать отходы с площадки", "7:00", "7:15"),
-                createWork("Разгрузить самосвалы на складе", "8:15", "9:15"),
-                createWork("Переместить экскаватор на новую строительную площадку", "9:30", "11:15"),
-            ],
-        },
-    ].map((item, index) => ({
-        ...item,
-        id: index,
-        timeline: item.timeline.map((timelineItem) => ({
-            ...timelineItem,
-            modalUrl: `/some-js-url?withParams=${timelineItem.workName}&index=${index}`,
-        })),
-    })),
+    ],
 });
 
 window.deployTimeline = deployTimeline;

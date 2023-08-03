@@ -29,7 +29,7 @@ deployTimeline({
 | `param`          | `string`  | Name of the parameter                             |
 
 ### Data API
-The Data object has its own initial data parameters, in addition to the following:
+The Data object has its own initial data parameters and unique identifier (`id`), in addition to the following:
 | Parameter        | Type      | Description                                       |
 |------------------|-----------|---------------------------------------------------|
 | `timeline`       | `array`   | Array of [timeline objects](#timeline-item-api)        |

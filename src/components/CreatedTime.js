@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import styles from "./main.module.scss";
+import styles from "./Timeline.module.scss";
 import Tooltip from "./Tooltip";
 import PropsContext from "../context/PropsContext";
 
@@ -34,14 +34,22 @@ const CreatedTime = ({ work, stickyStyles }) => {
     };
 
     return (
-        <Tooltip work={work}>
+        <Tooltip
+            active={isHover}
+            work={work}
+            containerPos={{
+                x: (containerRef.current?.getBoundingClientRect()?.x || 0) - paddingSize,
+                y: (containerRef.current?.getBoundingClientRect()?.y || 0) - paddingSize,
+                width: containerRef.current?.getBoundingClientRect()?.width || 0,
+            }}
+        >
             <a
                 ref={containerRef}
                 href={work.modalUrl}
                 className={styles.createdTime}
                 style={{
-                    backgroundColor: FUNC.darkenColor(work.color, isHover ? 20 : 0),
-                    padding: isComputed ? `0 ${paddingSize}px` : "0",
+                    backgroundColor: isHover ? FUNC.darkenColor(work.color, 20) : work.color,
+                    padding: isComputed ? `${paddingSize / 2}px ${paddingSize}px` : "0",
                 }}
                 onMouseEnter={handleChangeMouseEnter}
                 onMouseLeave={handleChangeMouseLeave}
@@ -62,9 +70,8 @@ const CreatedTime = ({ work, stickyStyles }) => {
                                     ? `${containerRef.current.clientWidth - 2 * paddingSize}px`
                                     : "100%",
                         }}
-                    >
-                        {showContent && work.workName}
-                    </div>
+                        dangerouslySetInnerHTML={showContent ? { __html: work.workName } : undefined}
+                    />
                 </div>
             </a>
         </Tooltip>

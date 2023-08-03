@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import styles from "./main.module.scss";
+import { useContext, useEffect, useRef, useState } from "react";
+import styles from "./Timeline.module.scss";
+import PropsContext from "../context/PropsContext";
 
 const FrozenCell = ({
     isHeading = false,
@@ -14,6 +15,7 @@ const FrozenCell = ({
     containerWidth,
     children,
 }) => {
+    const { FUNC } = useContext(PropsContext);
     const [freezeStyles, setFreezeStyles] = useState({});
     const cellRef = useRef(null);
 
@@ -24,9 +26,11 @@ const FrozenCell = ({
     };
 
     useEffect(() => {
-        window.addEventListener("resize", updateFreezeWidth);
+        const debouncedHandleResize = FUNC.DEBOUNCE(updateFreezeWidth, 100);
+
+        window.addEventListener("resize", debouncedHandleResize);
         return () => {
-            window.removeEventListener("resize", updateFreezeWidth);
+            window.removeEventListener("resize", debouncedHandleResize);
         };
     }, []);
 
@@ -67,14 +71,22 @@ const FrozenCell = ({
 
     if (isHeading)
         return (
-            <th rowSpan={2} className={computedClassNames} ref={cellRef} style={{ ...freezeStyles, ...shadowStyles }}>
-                {children}
-            </th>
+            <th
+                rowSpan={2}
+                className={computedClassNames}
+                ref={cellRef}
+                style={{ ...freezeStyles, ...shadowStyles }}
+                dangerouslySetInnerHTML={{ __html: children }}
+            />
         );
     return (
-        <td className={computedClassNames} ref={cellRef} rowSpan={rowSpan} style={{ ...freezeStyles, ...shadowStyles }}>
-            {children}
-        </td>
+        <td
+            className={computedClassNames}
+            ref={cellRef}
+            rowSpan={rowSpan}
+            style={{ ...freezeStyles, ...shadowStyles }}
+            dangerouslySetInnerHTML={{ __html: children }}
+        />
     );
 };
 
