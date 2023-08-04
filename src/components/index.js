@@ -13,6 +13,8 @@ const defaultFrozenColumns = {
     width: 100,
 };
 
+const stickyOffsetSize = 12;
+
 const Timeline = ({ initProps }) => {
     const tooltipContainerId = `${initProps.containerId}_${TOOLTIP_PORTAL_ID}`;
     const {
@@ -288,7 +290,9 @@ const Timeline = ({ initProps }) => {
             setStickyStyles(() => ({
                 position: "sticky",
                 left: `${
-                    frozenColumnsWidth.reduce((sum, widthItem) => sum + widthItem.width + 1, 0) + 12 + numeredColumnWidth
+                    frozenColumnsWidth.reduce((sum, widthItem) => sum + widthItem.width + 1, 0) +
+                    stickyOffsetSize +
+                    numeredColumnWidth
                 }px`,
             }));
         }
@@ -320,6 +324,7 @@ const Timeline = ({ initProps }) => {
                 value={{
                     containerRect: containerRef.current?.getBoundingClientRect() || {},
                     containerScrollRect,
+                    stickyOffsetSize,
                 }}
             >
                 <WorkCreateContext.Provider value={workCreateContext}>
@@ -372,14 +377,14 @@ const Timeline = ({ initProps }) => {
                                 </thead>
                                 <tbody className={styles.tbody}>
                                     {data.length > 0 ? (
-                                        data.map((dataItem, dataItemIndex) => (
+                                        data.map((dataItem) => (
                                             <React.Fragment key={dataItem.id}>
                                                 <tr className={getTrStyles(dataItem)}>
                                                     <td
                                                         className={`${styles.td} ${styles.numeredColumn}`}
                                                         rowSpan={dataItem.groupedTimelines.length}
                                                     >
-                                                        {dataItemIndex + 1}
+                                                        {dataItem.no}
                                                     </td>
                                                     {tableColumns.map((column, columnIndex) => (
                                                         <FrozenCell

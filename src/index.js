@@ -3,51 +3,6 @@ import ReactDOM from "react-dom/client";
 import Timeline from "./components";
 import { FINISH_ID, START_ID } from "./exports/constants";
 
-function DATE(time) {
-    if (!time) return DATE_MINUS_LOCAL_TZ();
-    return new Date(time);
-}
-
-function DATE_MINUS_LOCAL_TZ(time = new Date().getTime()) {
-    const receivedTime = new Date(time);
-    const timezoneOffsetInMinutes = receivedTime.getTimezoneOffset();
-    receivedTime.setMinutes(receivedTime.getMinutes() + timezoneOffsetInMinutes);
-    return receivedTime;
-}
-
-const colors = [
-    "#FF9595", // Red
-    "#ACB7EF", // Blue
-    "#90E094", // Green
-    "#FCE08A", // Yellow
-];
-
-function generateColors() {
-    const randomIndex = Math.floor(Math.random() * colors.length);
-    return colors[randomIndex];
-}
-
-const createWork = (workName, startTime, finishTime) => {
-    const currentTime = new Date();
-    currentTime.setSeconds(0);
-    currentTime.setMilliseconds(0);
-
-    const computedStartTime = DATE(currentTime);
-    computedStartTime.setHours(startTime.split(":")[0]);
-    computedStartTime.setMinutes(startTime.split(":")[1]);
-
-    const computedFinishTime = DATE(currentTime);
-    computedFinishTime.setHours(finishTime.split(":")[0]);
-    computedFinishTime.setMinutes(finishTime.split(":")[1]);
-
-    return {
-        workName,
-        startTime: computedStartTime.getTime(),
-        finishTime: computedFinishTime.getTime(),
-        color: generateColors(),
-    };
-};
-
 const deployTimeline = (initProps = {}) => {
     if (typeof initProps === "string") {
         try {
@@ -521,12 +476,13 @@ deployTimeline({
     data: [
         {
             id: 1,
+            no: 1,
             modelName: "ЧСДМ ДЗ-98",
             transportNo: "S390ACD",
             garageNo: "",
             timeline: [
                 {
-                    workName: "1. Техническое обслуживание - ",
+                    workName: "1. Техническое обслуживание - 1. Техническое обслуживание - 1. Техническое обслуживание - 1. Техническое обслуживание - Техническое обслуживание - Техническое обслуживание - ",
                     startTime: 1688385600000,
                     finishTime: 1688389800000,
                     color: "#F2DCDB",
@@ -545,12 +501,13 @@ deployTimeline({
         },
         {
             id: 2,
+            no: 2,
             modelName: "АЦ-3.2-40",
             transportNo: "S994MA",
             garageNo: "",
             timeline: [
                 {
-                    workName: "1. Техническое обслуживание - ТО (Замена двигателя)",
+                    workName: "1. Техническое обслуживание - ТО (Замена двигателя) 1. Техническое обслуживание - ТО (Замена двигателя)",
                     startTime: 1688396400000,
                     finishTime: 1688414400000,
                     color: "#F2DCDB",

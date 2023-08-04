@@ -7,10 +7,12 @@ import WorkCreateContext from "../../context/WorkCreateContext";
 
 const orZero = (value) => value || 0;
 
+const tooltipMaxWidth = 300;
+
 function Tooltip({ active, work, containerPos, children }) {
     const { FUNC } = useContext(PropsContext);
     const { stickyStyles } = useContext(WorkCreateContext);
-    const { containerRect, containerScrollRect } = useContext(TooltipContext);
+    const { containerRect, containerScrollRect, stickyOffsetSize } = useContext(TooltipContext);
     const [coords, setCoords] = useState({ top: 0, left: 0 });
 
     const tooltipRef = useRef(null);
@@ -35,13 +37,13 @@ function Tooltip({ active, work, containerPos, children }) {
     const isContainerWithScroll = Object.keys(containerScrollRect).length > 1;
     const containerLeftScroll = isContainerWithScroll ? containerScrollRect.left : 0;
     const isTooltipOverflowsRight =
-        containerLeftScroll + coords.left + (tooltipRef.current?.clientWidth || 300) >
-        containerLeftScroll + containerScrollRect.width - 12;
+        containerLeftScroll + coords.left + (tooltipRef.current?.clientWidth || tooltipMaxWidth) >
+        containerLeftScroll + containerScrollRect.width - stickyOffsetSize;
 
     let tooltipHorizontalPosition = {};
     if (isTooltipOverflowsRight) {
         tooltipHorizontalPosition = {
-            right: `${10 - containerLeftScroll}px`,
+            right: `${stickyOffsetSize - 2 - containerLeftScroll}px`,
         };
     } else {
         tooltipHorizontalPosition = {
@@ -60,8 +62,12 @@ function Tooltip({ active, work, containerPos, children }) {
             {children}
             {active && (
                 <Portal>
-                    <div className={styles.tooltip} ref={tooltipRef} style={computedTooltipStyles}>
-                        <div className={styles.tooltipLine} style={{backgroundColor: work.color }} />
+                    <div
+                        className={styles.tooltip}
+                        ref={tooltipRef}
+                        style={{ ...computedTooltipStyles, maxWidth: `${tooltipMaxWidth}px` }}
+                    >
+                        <div className={styles.tooltipLine} style={{ backgroundColor: work.color }} />
                         <div className={styles.content}>
                             <strong dangerouslySetInnerHTML={{ __html: work.workName }} />
                             <span>
